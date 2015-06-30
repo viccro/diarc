@@ -34,9 +34,9 @@ log = logging.getLogger('diarc.qt_view')
 class QtBlockItemAttributes(BlockItemAttributes):
     def __init__(self):
         BlockItemAttributes.__init__(self)
-        self.__bgcolor = "black"
-        self.__border_color = "black"
-        self.__label_color = "black"
+        self.__bgcolor = "#000000"
+        self.__border_color = "#000000"
+        self.__label_color = "#000000"
         self.border_width = 1
     @property
     def bgcolor(self):
@@ -60,9 +60,9 @@ class QtBlockItemAttributes(BlockItemAttributes):
 class QtBandItemAttributes(BandItemAttributes):
     def __init__(self):
         BandItemAttributes.__init__(self)
-        self._bgcolor = "black"
-        self._border_color = "black"
-        self._label_color = "black"
+        self._bgcolor = "#000000"
+        self._border_color = "#000000"
+        self._label_color = "#000000"
     @property
     def bgcolor(self):
         return QColor(self._bgcolor)
@@ -85,9 +85,9 @@ class QtBandItemAttributes(BandItemAttributes):
 class QtSnapItemAttributes(SnapItemAttributes):
     def __init__(self):
         SnapItemAttributes.__init__(self)
-        self._bgcolor = "white"
-        self._border_color = "black"
-        self._label_color = "black"
+        self._bgcolor = "#ffffff"
+        self._border_color = "#000000"
+        self._label_color = "#000000"
     @property
     def bgcolor(self):
         return QColor(self._bgcolor)
@@ -1243,9 +1243,9 @@ class QtView(QGraphicsView, View):
         self.__set_snap_item_settings_signal.connect(self.layout_manager.set_snap_item_settings)
         self.__set_snap_item_attributes_signal.connect(self.layout_manager.set_snap_item_attributes)
         self.resize(1024,768)
-        QColor.setAllowX11ColorNames(True)
-        if not QColor.allowX11ColorNames():
-            rospy.logwarn("Coloring will not work properly")
+#        QColor.setAllowX11ColorNames(True)
+#        if not QColor.allowX11ColorNames():
+#            rospy.logwarn("Coloring will not work properly")
         self.show()
 
     def update_view(self):

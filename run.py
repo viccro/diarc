@@ -19,9 +19,10 @@ def asciiview(args):
 def qtview(args):
     try:
         import python_qt_binding.QtGui
-    except:
+    except Exception as e:
         print "Error: python_qt_binding not installed."
         print "Please install using `sudo pip install python_qt_binding`"
+        print str(e)
         exit(-1)
     from diarc import parser
     from qt_view import qt_view
