@@ -54,22 +54,22 @@ class FabrikGraph(Topology):
 
 
 class Node(Vertex):
-    def __init__(self,fg,name=None):
+    def __init__(self,fg):
         typecheck(fg,FabrikGraph,"fg")
         super(Node,self).__init__(fg)
 
         # dumb placement - just get the next free index
         self.block.index = fg.nextFreeNodeIndex()
 
-        self.name = name
+        self.name = None
         self.location = None
-        self.pid = None
+#        self.pid = None
         self.nodeType = None
 
     @property
     def producers(self):
         # NOTE: This must be a property function (instead of just saying 
-        # self.publishers = self.sources in the constructor) because self.sources
+        # self.producers = self.sources in the constructor) because self.sources
         # just returns a static list once, and we need this to be dynamically
         # queried every time we ask. This is because Vertex.sources and Edge.sources
         # are just syntax sugar for functions that are being called.
@@ -88,19 +88,21 @@ class Queue(Node):
 class ServiceBuddy(Node):
     def __init__(self,fg,name=None):
         typecheck(fg,FabrikGraph,"fg")
-        super(Queue,self).__init__(fg)
-        self.nodeType = "sb" 
-        
+        super(ServiceBuddy,self).__init__(fg)
+        self.nodeType = "sb"
+        self.name = name
+        print "Adding ServiceBuddy " + str(name)
+
 class Wormhole(Node):
     def __init__(self,fg,name=None):
         typecheck(fg,FabrikGraph,"fg")
-        super(Queue,self).__init__(fg)
+        super(Wormhole,self).__init__(fg)
         self.nodeType = "wh"
         
 
 
 class Exchange(Edge):
-    def __init__(self,fg,name=None,msgType=None):
+    def __init__(self,fg,name=None):
         typecheck(fg,FabrikGraph,"fg")
         super(Exchange,self).__init__(fg)
         
@@ -110,7 +112,7 @@ class Exchange(Edge):
         self.negBand.rank = self.posBand.altitude
 
         self.name = name
-        self.msgType = msgType
+        print "Adding Exchange " + str(name)
 
     @property
     def producers(self):
@@ -130,12 +132,11 @@ class Producer(Source):
         typecheck(fg,FabrikGraph,"fg")
         typecheck(node,Node,"node") 
         typecheck(exchange, Exchange, "exchange")
-        super(Publisher,self).__init__(rsg,node,topic)
+        super(Producer,self).__init__(fg,node,exchange)
         # Dumb placement
         self.snap.order = max(filter(lambda x: isinstance(x,int), [prod.snap.order for prod in node.producers] + [-1]))+1
 
         self.bandwidth = None
-        self.msgType = None
         self.routingKeys = routingKeys
 
     @property
@@ -153,13 +154,12 @@ class Consumer(Sink):
         typecheck(fg,FabrikGraph,"fg")
         typecheck(node,Node,"node")
         typecheck(exchange,Exchange,"topic")
-        super(Subscriber,self).__init__(fg,node,exchange)
+        super(Consumer,self).__init__(fg,node,exchange)
 
         # Dumb placement
         self.snap.order = max(filter(lambda x: isinstance(x,int), [con.snap.order for con in node.consumers] + [-1]))+1
 
         self.bandwidth = None
-        self.msgType = None
         self.routingKeys = routingKeys
 
     @property

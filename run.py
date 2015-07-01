@@ -53,7 +53,24 @@ def rosview():
     view.raise_()
     sys.exit(app.exec_())
 
-
+def fabrikview():
+    try:
+        import python_qt_binding.QtGui
+    except:
+        print "Error: python_qt_binding not installed."
+        print "Please install using `sudo pip install python_qt_binding`"
+        exit(-1)
+    from qt_view import qt_view
+    from diarc import base_adapter
+    from fabrik import fabrik_parser
+    topology = fabrik_parser.build_topology(args[0])
+    app = python_qt_binding.QtGui.QApplication([])
+    view = qt_view.QtView()
+    adapter = fabrik_adapter.FabrikAdapter(topology, view)
+    adapter.update_view()
+    view.activateWindow()
+    view.raise_()
+    sys.exit(app.exec_())
 
 
 if __name__=="__main__":
