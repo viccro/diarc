@@ -32,6 +32,8 @@ from fabrik_topology import *
 #   * ec2_id
 #   * region
 # - Run jinja2 on files before using them
+# - x-dead-letter-exchange arguments
+# - options for muting certain exchanges (trace, for example)
 
 
 def get_files(path):
@@ -68,10 +70,11 @@ def extract_features(path, filename, fabrik):
 
     #Add publishing bindings and exchanges
     set_pub_features(pub_options, fabrik, filename, sb)
-    #TODO: set_sub_features(sub_options, fabrik)
+    set_sub_features(sub_options, fabrik, filename, sb)
 
 def set_pub_features(pub_options, fabrik, filename, sb):
     '''Pulls out appropriate features from config "options" and adds them to the fabrik topology'''
+    print "SB = " + sb.name
     for opt in pub_options:
         try:
             pubDict = json.loads(opt)
@@ -79,23 +82,83 @@ def set_pub_features(pub_options, fabrik, filename, sb):
             print "Invalid json in file "+filename
             exit(-1)
 
-    #Add exchanges and bindings for first step out in publishing (top level exchange-spec)
         try:
             exchangeName = pubDict['exchange-spec'].get(u'name')
-            if exchangeName not in fabrik.exchanges.keys():
-                exchange = Exchange(fabrik,pubDict['exchange-spec'].get(u'name'))
-            else: 
-                exchange = fabrik.exchanges[exchangeName]
-            producer = Producer(fabrik, sb, exchange)
         except:
-            exchange = Exchange(fabrik, pubDict['exchange-spec'])
-            producer = Producer(fabrik, sb, exchange)
-    
-    #Add exchanges and bindings for next steps out (recursively parsing bindings)
-#TODO:        parse_bindings()
+            exchangeName = pubDict['exchange-spec']
+        
+        exchange = add_exchange(fabrik, exchangeName)
+        producer = Producer(fabrik, sb, exchange)
 
-def parse_bindings(bindings):
-    print bindings
+        if 'bindings' in pubDict.keys():
+            parse_pub_bindings(fabrik,pubDict['bindings'], exchange)
+
+def add_exchange(fabrik, exchangeName):
+    '''Add exchanges and bindings for first step out in publishing (top level exchange-spec)'''
+    return add_object_to_fabrik(fabrik, exchangeName, fabrik.exchanges, Exchange)
+
+def add_object_to_fabrik(fabrik, objectName, existingObjects, Object):
+    '''Add exchanges and bindings for first step out in publishing (top level exchange-spec)'''
+
+    if objectName not in existingObjects.keys():
+        return Object(fabrik,objectName)
+    else: 
+        return existingObjects[objectName]
+
+def parse_pub_bindings(fabrik, bindings, publishing_exchange):
+    '''Add exchanges and bindings for next steps out (recursively parsing bindings)'''
+    for b in bindings:
+        if 'bindings' in b['bind-tree']:
+            routingKeys = b['routing-keys']
+            newBindings = b['bind-tree']['bindings']
+            try:
+                newPubExchangeName = b['bind-tree']['exchange-spec'].get('name')
+            except:
+                newPubExchangeName = b['bind-tree']['exchange-spec']
+            newPEx = add_exchange(fabrik, newPubExchangeName)
+            parse_pub_bindings(fabrik, newBindings, newPEx) 
+            #TODO: Consumer stuff
+        else: #base-case
+            exchangeName = b['bind-tree']
+            if 'routing-keys' in b:
+                routingKeys = b['routing-keys']
+            elif 'routing-key' in b:
+                routingKeys = b['routing-key']
+            exchange = add_exchange(fabrik,exchangeName)
+        #TODO: Consumer(fabrik, publishing_exchange, exchange)
+
+def set_sub_features(sub_options, fabrik, filename, sb):
+    '''Pulls out necessary features from config options and adds them to the fabrik topology'''
+    for opt in sub_options:
+        try:
+            subDict = json.loads(opt)
+        except:
+            print "Invalid json in file "+filename
+            exit(-1)
+
+        try:
+            queueName = subDict['queue-spec'].get(u'name')
+        except:
+            queueName = subDict['queue-spec']
+        queue = add_queue(fabrik, queueName)
+
+#    consumer = Consumer( ) TODO: queue -> sb is not how it works right now!
+        if 'bindings' in subDict.keys():
+            parse_sub_bindings(fabrik, subDict['bindings'], queue)
+
+def add_queue(fabrik, queueName):
+    '''Add queues and bindings for first step out in subscribing (top level exchange-spec)'''
+    return add_object_to_fabrik(fabrik, queueName, fabrik.queues, Queue)
+
+def parse_sub_bindings(fabrik, bindings, queue):
+    if 'exchange-spec' in bindings[0]['bind-tree']:
+        a = bindings[0]['bind-tree']
+#        print a
+    else: #base-case
+        exchangeName = bindings[0]['bind-tree']
+        routingKeys = bindings[0]['routing-keys']
+        exchange = add_exchange(fabrik,exchangeName)
+        Consumer(fabrik, queue, exchange, routingKeys) 
 
 mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
 filename = 'process.ini.j2'

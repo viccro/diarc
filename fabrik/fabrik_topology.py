@@ -38,6 +38,10 @@ class FabrikGraph(Topology):
         return dict([(v.name,v) for v in self.vertices])
 
     @property
+    def queues(self):
+        return dict([(v.name,v) for v in self.vertices if (v.nodeType == 'queue')])
+
+    @property
     def exchanges(self):
         return dict(filter(lambda x: None not in x, [(topic.name,topic) for topic in self.edges]))
 
@@ -84,6 +88,8 @@ class Queue(Node):
         typecheck(fg,FabrikGraph,"fg")
         super(Queue,self).__init__(fg)
         self.nodeType = "queue"        
+        self.name = name
+        print "\tAdding Queue " + str(name)
         
 class ServiceBuddy(Node):
     def __init__(self,fg,name=None):
@@ -91,13 +97,15 @@ class ServiceBuddy(Node):
         super(ServiceBuddy,self).__init__(fg)
         self.nodeType = "sb"
         self.name = name
-        print "Adding ServiceBuddy " + str(name)
+        print "\tAdding ServiceBuddy " + str(name)
 
 class Wormhole(Node):
     def __init__(self,fg,name=None):
         typecheck(fg,FabrikGraph,"fg")
         super(Wormhole,self).__init__(fg)
         self.nodeType = "wh"
+        self.name = name
+        print "\tAdding Wormhole " + str(name)
         
 
 
@@ -112,7 +120,7 @@ class Exchange(Edge):
         self.negBand.rank = self.posBand.altitude
 
         self.name = name
-        print "Adding Exchange " + str(name)
+        print "\tAdding Exchange " + str(name)
 
     @property
     def producers(self):
@@ -138,6 +146,7 @@ class Producer(Source):
 
         self.bandwidth = None
         self.routingKeys = routingKeys
+        print "\t\tAdding Producer: " + str(node.name)+" to "+str(exchange.name)
 
     @property
     def exchange(self):
@@ -161,6 +170,7 @@ class Consumer(Sink):
 
         self.bandwidth = None
         self.routingKeys = routingKeys
+        print "\t\tAdding Consumer: " + str(exchange.name)+" to "+str(node.name)
 
     @property
     def topic(self):
