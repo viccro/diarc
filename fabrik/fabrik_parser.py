@@ -67,14 +67,13 @@ def extract_features(path, filename, fabrik):
     #Add Service Buddies to topology
     service_buddy_name = filename.replace('.ini.j2','')
     sb = ServiceBuddy(fabrik, service_buddy_name)
-
+    print sb.name
     #Add publishing bindings and exchanges
     set_pub_features(pub_options, fabrik, filename, sb)
     set_sub_features(sub_options, fabrik, filename, sb)
 
 def set_pub_features(pub_options, fabrik, filename, sb):
     '''Pulls out appropriate features from config "options" and adds them to the fabrik topology'''
-    print "SB = " + sb.name
     for opt in pub_options:
         try:
             pubDict = json.loads(opt)
@@ -150,15 +149,29 @@ def add_queue(fabrik, queueName):
     '''Add queues and bindings for first step out in subscribing (top level exchange-spec)'''
     return add_object_to_fabrik(fabrik, queueName, fabrik.queues, Queue)
 
-def parse_sub_bindings(fabrik, bindings, queue):
-    if 'exchange-spec' in bindings[0]['bind-tree']:
-        a = bindings[0]['bind-tree']
-#        print a
-    else: #base-case
-        exchangeName = bindings[0]['bind-tree']
-        routingKeys = bindings[0]['routing-keys']
-        exchange = add_exchange(fabrik,exchangeName)
-        Consumer(fabrik, queue, exchange, routingKeys) 
+def parse_sub_bindings(fabrik, bindings, subscribing_queue):
+    for b in bindings:
+        if 'bindings' in b['bind-tree']:
+            routingKeys = b['routing-keys']
+            newBindings = b['bind-tree']['bindings']
+            try:
+                newSubExchangeName = b['bind-tree']['exchange-spec'].get('name')
+            except:
+                newSubExchangeName = b['bind-tree']['exchange-spec']
+            newSubExchange = add_exchange(fabrik, newSubExchangeName)
+            parse_sub_bindings(fabrik, newBindings, newSubExchange) 
+            #TODO: Consumer stuff
+        else: #base-case
+            try:
+                exchangeName = b['bind-tree']['exchange-spec']['name']
+            except:
+                exchangeName = b['bind-tree']
+            if 'routing-keys' in b:
+                routingKeys = b['routing-keys']
+            elif 'routing-key' in b:
+                routingKeys = b['routing-key']
+            exchange = add_exchange(fabrik,exchangeName)
+            Consumer(fabrik, subscribing_queue, exchange, routingKeys) 
 
 mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
 filename = 'process.ini.j2'
