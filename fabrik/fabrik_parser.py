@@ -2,8 +2,6 @@ import json
 import ConfigParser
 import os
 import os.path
-#import xml.etree.ElementTree as ET
-#import xml.dom.minidom
 from fabrik_topology import *
 
 # Parses fabrik .ini.j2 files and returns a FabrikGraph object
@@ -49,6 +47,8 @@ def build_topology(path):
             extract_features(path,f, fabrik)
         except Exception as ex:
             print str(ex)
+
+    print fabrik 
     return fabrik
 
 def extract_features(path, filename, fabrik):
@@ -71,6 +71,7 @@ def extract_features(path, filename, fabrik):
     #Add publishing bindings and exchanges
     set_pub_features(pub_options, fabrik, filename, sb)
     set_sub_features(sub_options, fabrik, filename, sb)
+    return fabrik
 
 def set_pub_features(pub_options, fabrik, filename, sb):
     '''Pulls out appropriate features from config "options" and adds them to the fabrik topology'''
@@ -96,9 +97,12 @@ def add_exchange(fabrik, exchangeName):
     '''Add exchanges and bindings for first step out in publishing (top level exchange-spec)'''
     return add_object_to_fabrik(fabrik, exchangeName, fabrik.exchanges, Exchange)
 
+def add_queue(fabrik, queueName):
+    '''Add queues and bindings for first step out in subscribing (top level exchange-spec)'''
+    return add_object_to_fabrik(fabrik, queueName, fabrik.queues, Queue)
+
 def add_object_to_fabrik(fabrik, objectName, existingObjects, Object):
     '''Add exchanges and bindings for first step out in publishing (top level exchange-spec)'''
-
     if objectName not in existingObjects.keys():
         return Object(fabrik,objectName)
     else: 
@@ -145,11 +149,9 @@ def set_sub_features(sub_options, fabrik, filename, sb):
         if 'bindings' in subDict.keys():
             parse_sub_bindings(fabrik, subDict['bindings'], queue)
 
-def add_queue(fabrik, queueName):
-    '''Add queues and bindings for first step out in subscribing (top level exchange-spec)'''
-    return add_object_to_fabrik(fabrik, queueName, fabrik.queues, Queue)
 
 def parse_sub_bindings(fabrik, bindings, subscribing_queue):
+    '''Add exchanges and bindings for next steps out (recursively parsing bindings)'''
     for b in bindings:
         if 'bindings' in b['bind-tree']:
             routingKeys = b['routing-keys']
@@ -166,6 +168,7 @@ def parse_sub_bindings(fabrik, bindings, subscribing_queue):
                 exchangeName = b['bind-tree']['exchange-spec']['name']
             except:
                 exchangeName = b['bind-tree']
+
             if 'routing-keys' in b:
                 routingKeys = b['routing-keys']
             elif 'routing-key' in b:
