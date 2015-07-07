@@ -3,7 +3,7 @@ import ConfigParser
 import os
 import os.path
 from fabrik_topology import *
-
+import logging
 # Parses fabrik .ini.j2 files and returns a FabrikGraph object
 #
 # Assumed format of Topology sections:
@@ -33,6 +33,7 @@ from fabrik_topology import *
 # - x-dead-letter-exchange arguments
 # - options for muting certain exchanges (trace, for example)
 
+log = logging.getLogger('fabrik.fabrik_parser')
 
 def get_files(path):
     '''Takes a directory path and returns a list of .ini.j2 files in that directory'''
@@ -46,9 +47,8 @@ def build_topology(path):
         try:
             extract_features(path,f, fabrik)
         except Exception as ex:
-            print str(ex)
+            log.debug(str(ex))
 
-    print fabrik 
     return fabrik
 
 def extract_features(path, filename, fabrik):
@@ -60,14 +60,13 @@ def extract_features(path, filename, fabrik):
         sub_options = [config.get('Topology', opt) for opt in config.options('Topology') if opt.startswith('subscribe_')]
         pub_options = [config.get('Topology', opt) for opt in config.options('Topology') if opt.startswith('publish_')]
     except:
-        print "Invalid file in specified path: "+ filename
+        log.debug( "Invalid file in specified path: "+ filename)
         return
 #        exit(-1)
 
     #Add Service Buddies to topology
     service_buddy_name = filename.replace('.ini.j2','')
     sb = ServiceBuddy(fabrik, service_buddy_name)
-    print sb.name
     #Add publishing bindings and exchanges
     set_pub_features(pub_options, fabrik, filename, sb)
     set_sub_features(sub_options, fabrik, filename, sb)
@@ -79,7 +78,7 @@ def set_pub_features(pub_options, fabrik, filename, sb):
         try:
             pubDict = json.loads(opt)
         except:
-            print "Invalid json in file "+filename
+            log.debug( "Invalid json in file "+filename)
             exit(-1)
 
         try:
@@ -136,7 +135,7 @@ def set_sub_features(sub_options, fabrik, filename, sb):
         try:
             subDict = json.loads(opt)
         except:
-            print "Invalid json in file "+filename
+            log.debug("Invalid json in file "+filename)
             exit(-1)
 
         try:
@@ -176,6 +175,6 @@ def parse_sub_bindings(fabrik, bindings, subscribing_queue):
             exchange = add_exchange(fabrik,exchangeName)
             Consumer(fabrik, subscribing_queue, exchange, routingKeys) 
 
-mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
-filename = 'process.ini.j2'
-build_topology(mypath)
+#mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
+#filename = 'process.ini.j2'
+#build_topology(mypath)

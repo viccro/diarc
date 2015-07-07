@@ -6,8 +6,9 @@ import sys
 sys.dont_write_bytecode = True
 import inspect
 import logging
+import argparse
 
-def asciiview(args):
+def asciiview(args=None):
     from diarc import parser
     from ascii_view import ascii_view
     from diarc import base_adapter
@@ -16,7 +17,7 @@ def asciiview(args):
     adapter = base_adapter.BaseAdapter(topology, view)
     adapter._update_view()
 
-def qtview(args):
+def qtview(args=None):
     try:
         import python_qt_binding.QtGui
     except Exception as e:
@@ -36,7 +37,7 @@ def qtview(args):
     view.raise_()
     sys.exit(app.exec_())
 
-def rosview():
+def rosview(args=None):
     try:
         import python_qt_binding.QtGui
     except:
@@ -53,7 +54,7 @@ def rosview():
     view.raise_()
     sys.exit(app.exec_())
 
-def fabrikview(args):
+def fabrikview(args=None):
     try:
         import python_qt_binding.QtGui
     except:
@@ -63,13 +64,14 @@ def fabrikview(args):
     from qt_view import qt_view
     from fabrik import fabrik_adapter
     from fabrik import fabrik_parser
-    topology = fabrik_parser.build_topology(args[0])
-    app = python_qt_binding.QtGui.QApplication([])
-    view = qt_view.QtView()
-    adapter = fabrik_adapter.FabrikAdapter(topology, view)
-    adapter._update_view()
-    view.activateWindow()
-    view.raise_()
+    if args.path:
+        topology = fabrik_parser.build_topology(args.path)
+        app = python_qt_binding.QtGui.QApplication([])
+        view = qt_view.QtView()
+        adapter = fabrik_adapter.FabrikAdapter(topology, view)
+        adapter._update_view()
+        view.activateWindow()
+        view.raise_() 
     sys.exit(app.exec_())
 
 
@@ -82,12 +84,26 @@ if __name__=="__main__":
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger('main')
 
-    if len(sys.argv) < 2 or sys.argv[1] not in available_tests:
-        print "Usage:\n ./test.py <test> [parameters]\n"
-        print "Tests available:",available_tests.keys()
-        exit(0)
-    elif len(sys.argv)>2:
-        available_tests[sys.argv[1]](sys.argv[2:])
-    else:
-        available_tests[sys.argv[1]]()
+    parser = argparse.ArgumentParser()
 
+    viewNameHelp = "Tests available:" + str(available_tests.keys())
+    parser.add_argument('viewName', help=viewNameHelp)
+
+    pathHelp = "path to the directory containing .ini.j2 configuration files"
+    parser.add_argument('--path', help=pathHelp)
+    
+    ec2Help = "ec2 id"
+    parser.add_argument('--ec2_id', help=ec2Help)
+    
+    regionHelp = "region name"
+    parser.add_argument('--region', help=regionHelp)
+
+    silverHelp = "Array of silver products"
+    parser.add_argument('--silver_products', help=silverHelp)
+
+    args = parser.parse_args()
+    
+    try:
+        available_tests[args.viewName](args)
+    except:
+        print "'./run.py -h' for help"

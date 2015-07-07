@@ -28,6 +28,9 @@
 #   Source  = Producer
 #
 from diarc.topology import *
+import logging
+
+log = logging.getLogger('fabrik.fabrik_parser')
 
 class FabrikGraph(Topology):
     def __init__(self):
@@ -89,7 +92,7 @@ class Queue(Node):
         super(Queue,self).__init__(fg)
         self.nodeType = "queue"        
         self.name = name
-        print "\tAdding Queue " + str(name)
+        log.debug( "Adding Queue " + str(name))
         
 class ServiceBuddy(Node):
     def __init__(self,fg,name=None):
@@ -97,7 +100,7 @@ class ServiceBuddy(Node):
         super(ServiceBuddy,self).__init__(fg)
         self.nodeType = "sb"
         self.name = name
-        print "\tAdding ServiceBuddy " + str(name)
+        log.debug("Adding ServiceBuddy " + str(name))
 
 class Wormhole(Node):
     def __init__(self,fg,name=None):
@@ -105,9 +108,7 @@ class Wormhole(Node):
         super(Wormhole,self).__init__(fg)
         self.nodeType = "wh"
         self.name = name
-        print "\tAdding Wormhole " + str(name)
-        
-
+        log.debug( "Adding Wormhole " + str(name))
 
 class Exchange(Edge):
     def __init__(self,fg,name=None):
@@ -120,7 +121,7 @@ class Exchange(Edge):
         self.negBand.rank = self.posBand.altitude
 
         self.name = name
-        print "\tAdding Exchange " + str(name)
+        log.debug("Adding Exchange " + str(name))
 
     @property
     def producers(self):
@@ -146,7 +147,7 @@ class Producer(Source):
 
         self.bandwidth = None
         self.routingKeys = routingKeys
-        print "\t\tAdding Producer: " + str(node.name)+" to "+str(exchange.name)
+        log.debug("Adding Producer: " + str(node.name)+" to "+str(exchange.name))
 
     @property
     def exchange(self):
@@ -170,7 +171,7 @@ class Consumer(Sink):
 
         self.bandwidth = None
         self.routingKeys = routingKeys
-        print "\t\tAdding Consumer: " + str(exchange.name)+" to "+str(node.name)
+        log.debug("Adding Consumer: " + str(exchange.name)+" to "+str(node.name))
 
     @property
     def topic(self):
