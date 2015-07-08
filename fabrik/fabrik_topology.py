@@ -21,12 +21,17 @@
 # This renames some things into Fabrik terminology to be more conveient, and also
 # adds some attributes we want to track. 
 #
-# Renaming Looks like this
-#   Vertex  = Node {Queue, Service, Shovel}
-#   Edge    = Exchange
-#   Sink    = Consumer
-#   Source  = Producer
+#   Logical  = Renamed  -> Layout components
+#   ----------------------------
+#   Vertex   = Node     -> Block
+#       {Queue, Service, Wormhole, Latch (invisible, used in hooks)}
+#   Edge     = Exchange -> Band
+#   Sink     = Consumer -> Snap - emitter
+#   Source   = Producer -> Snap - collector
+#            = Transfer -> Hook
+#            = Flow     -> Feed
 #
+
 from diarc.topology import *
 import logging
 
@@ -35,6 +40,8 @@ log = logging.getLogger('fabrik.fabrik_parser')
 class FabrikGraph(Topology):
     def __init__(self):
         super(FabrikGraph,self).__init__()
+        self._transfers = TypedList(Transfer)
+        self._flows = TypedList(Flow)
 
     @property
     def nodes(self):
@@ -47,6 +54,14 @@ class FabrikGraph(Topology):
     @property
     def exchanges(self):
         return dict(filter(lambda x: None not in x, [(topic.name,topic) for topic in self.edges]))
+
+    @property
+    def transfers(self):
+        return self._transfers
+
+    @property
+    def flows(self):
+        return self._flows
 
     def nextFreeNodeIndex(self):
         """ returns the next available node index """
@@ -64,13 +79,12 @@ class Node(Vertex):
     def __init__(self,fg):
         typecheck(fg,FabrikGraph,"fg")
         super(Node,self).__init__(fg)
-
+        
         # dumb placement - just get the next free index
         self.block.index = fg.nextFreeNodeIndex()
 
         self.name = None
         self.location = None
-#        self.pid = None
         self.nodeType = None
 
     @property
@@ -85,6 +99,7 @@ class Node(Vertex):
     @property
     def consumers(self):
         return self.sinks
+
 
 class Queue(Node):
     def __init__(self,fg,name=None):
@@ -110,6 +125,12 @@ class Wormhole(Node):
         self.name = name
         log.debug( "Adding Wormhole " + str(name))
 
+class Latch(Node):
+    def __init__(self, fg):
+        typecheck(fg,FabrikGraph, "fg")
+        super(Latch,self).__init__(fg)
+        self.nodeType = "latch"
+
 class Exchange(Edge):
     def __init__(self,fg,name=None):
         typecheck(fg,FabrikGraph,"fg")
@@ -122,6 +143,11 @@ class Exchange(Edge):
 
         self.name = name
         log.debug("Adding Exchange " + str(name))
+
+    @property
+    def transfers(self):
+        """Returns an unordered list of outgoing transfers from this exchange"""
+        return filter(lambda x: x.origin == self, self._topology._transfers)
 
     @property
     def producers(self):
@@ -183,4 +209,81 @@ class Consumer(Sink):
         # NOTE: See note on Node class about why this MUST be a property.
         return self.vertex
 
+class Flow(object):
+    """An object that represents messages flowing from a node to another node;
+    Seen, for example, from a queue to a serivce buddy"""
+    def __init__(self, fg, node_origin, node_dest):
+        self._topology = typecheck(fg, FabrikGraph, "fg")
+        self._origin = typecheck(node_origin, Node, "origin")
+        self._dest = typecheck(node_dest, Node, "dest")
+        self._topology._flows.append(self)
 
+    @property
+    def origin(self):
+        return self._origin
+
+    @property
+    def dest(self):
+        return self._dest
+
+class Transfer(object):
+    """An object that represents messages flowing from one exchange to another"""
+    def __init__(self, fg, exchange_origin, exchange_dest, routingKeys = None):
+        self._topology = typecheck(fg, FabrikGraph, "fg")
+        self._origin = typecheck(exchange_origin, Exchange, "origin")
+        self._dest = typecheck(exchange_dest, Exchange, "dest")
+        self._hook = Hook(self)
+        self._routingKeys = routingKeys
+        for transfer in exchange_origin.transfers + exchange_dest.transfers:
+            if (exchange_origin == transfer.origin) and (exchange_dest == transfer.dest) and (routingKeys == transfer.routingKeys):
+                raise Exception("Duplicate exchange transfer! "+exchange_origin.name+"->"+exchange_dest.name+", routing-keys:"+str(transfer.routingKeys))
+        self._topology._transfers.append(self)
+        self._latch = Latch(self._topology)
+
+    @property
+    def origin(self):
+        return self._origin
+
+    @property
+    def dest(self):
+        return self._dest
+
+    @property
+    def hook(self):
+        return self._hook
+
+    @property
+    def latch(self):
+        return self._latch
+
+    @property
+    def routingKeys(self):
+        return self._routingKeys
+
+class Hook(object):
+    """Visual representation of a transfer"""
+    def __init__(self, transfer):
+        self._transfer = typecheck(transfer, Transfer, "transfer")
+        self._order = None    
+    
+    def posBandLink(self):
+#TODO something
+        pBand = self._transfer.origin.posBand
+        return pBand
+
+    def negBandLink(self):
+#TODO something
+        nBand = self._transfer.origin.negBand
+        return nBand
+
+    @property
+    def latch(self):
+        return self._transfer._latch
+
+    @property
+    def bandLinks(self):
+        return filter(lambda x: isinstance(x,Band), [self.posBandLink, self.negBandLink])
+
+    #TODO leftHook rightHook?
+
+#class Flow(

@@ -24,8 +24,7 @@ import logging
 #       "bindings": ...
 #
 # TODO:
-# - Process the "step out" pieces in each set of options
-# - Take in parameters for:
+# - Use parameters for:
 #   * array of silver_products
 #   * ec2_id
 #   * region
@@ -101,11 +100,26 @@ def add_queue(fabrik, queueName):
     return add_object_to_fabrik(fabrik, queueName, fabrik.queues, Queue)
 
 def add_object_to_fabrik(fabrik, objectName, existingObjects, Object):
-    '''Add exchanges and bindings for first step out in publishing (top level exchange-spec)'''
+    '''Checks whether object already exists in fabrik, to avoid duplications'''
     if objectName not in existingObjects.keys():
         return Object(fabrik,objectName)
     else: 
         return existingObjects[objectName]
+
+def add_transfer(fabrik, publishing_exchange, exchange, routingKeys):
+    for t in fabrik.transfers:
+        if ((t.origin == publishing_exchange) and (t.dest == exchange) and (t.routingKeys == routingKeys)):
+            return
+
+    interExchTransfer = Transfer(fabrik, publishing_exchange, exchange, routingKeys)
+    log.debug("Adding Transfer from "+interExchTransfer.origin.name+" to "+interExchTransfer.dest.name)
+
+def add_flow(fabrik, origin_node, dest_node):
+    for f in fabrik.flows:
+        if ((f.origin == origin_node) and (f.dest == dest_node)):
+            return
+    node_to_node = Flow(fabrik, origin_node, dest_node)
+    log.debug("Adding Flow from "+node_to_node.origin.name+" to "+node_to_node.dest.name)
 
 def parse_pub_bindings(fabrik, bindings, publishing_exchange):
     '''Add exchanges and bindings for next steps out (recursively parsing bindings)'''
@@ -119,7 +133,7 @@ def parse_pub_bindings(fabrik, bindings, publishing_exchange):
                 newPubExchangeName = b['bind-tree']['exchange-spec']
             newPEx = add_exchange(fabrik, newPubExchangeName)
             parse_pub_bindings(fabrik, newBindings, newPEx) 
-            #TODO: Consumer stuff
+            add_transfer(fabrik, publishing_exchange, newPEx, routingKeys)
         else: #base-case
             exchangeName = b['bind-tree']
             if 'routing-keys' in b:
@@ -127,7 +141,8 @@ def parse_pub_bindings(fabrik, bindings, publishing_exchange):
             elif 'routing-key' in b:
                 routingKeys = b['routing-key']
             exchange = add_exchange(fabrik,exchangeName)
-        #TODO: Consumer(fabrik, publishing_exchange, exchange)
+            add_transfer(fabrik, publishing_exchange, exchange, routingKeys)
+    #TODO: Consumer(fabrik, publishing_exchange, exchange)
 
 def set_sub_features(sub_options, fabrik, filename, sb):
     '''Pulls out necessary features from config options and adds them to the fabrik topology'''
@@ -143,8 +158,7 @@ def set_sub_features(sub_options, fabrik, filename, sb):
         except:
             queueName = subDict['queue-spec']
         queue = add_queue(fabrik, queueName)
-
-#    consumer = Consumer( ) TODO: queue -> sb is not how it works right now!
+        add_flow(fabrik, queue, sb)
         if 'bindings' in subDict.keys():
             parse_sub_bindings(fabrik, subDict['bindings'], queue)
 
@@ -161,7 +175,7 @@ def parse_sub_bindings(fabrik, bindings, subscribing_queue):
                 newSubExchangeName = b['bind-tree']['exchange-spec']
             newSubExchange = add_exchange(fabrik, newSubExchangeName)
             parse_sub_bindings(fabrik, newBindings, newSubExchange) 
-            #TODO: Consumer stuff
+        #TODO consumer stuff?
         else: #base-case
             try:
                 exchangeName = b['bind-tree']['exchange-spec']['name']
@@ -175,6 +189,7 @@ def parse_sub_bindings(fabrik, bindings, subscribing_queue):
             exchange = add_exchange(fabrik,exchangeName)
             Consumer(fabrik, subscribing_queue, exchange, routingKeys) 
 
-#mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
+mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
 #filename = 'process.ini.j2'
-#build_topology(mypath)
+t = build_topology(mypath)
+
