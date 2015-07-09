@@ -52,10 +52,14 @@ class FabrikAdapter(BaseAdapter):
             attrs.bgcolor = "red"
             attrs.border_color = "black"
             attrs.label_color = "black"
-        else:
+        elif block._vertex.nodeType == 'wh':
             attrs.bgcolor = "gray"
             attrs.border_color = "black"
             attrs.label_color = "black"
+        else:
+            attrs.bgcolor = "white"
+            attrs.border_color = "white"
+            attrs.label_color = "white"
         attrs.border_width = 1
         attrs.label = str(block._vertex.name)
         attrs.spacerwidth = 20

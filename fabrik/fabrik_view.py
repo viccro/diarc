@@ -1,15 +1,211 @@
 from qt_view import qt_view
+from qt_view import SpacerContainer
 import logging
 from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtCore import pyqtSignal as Signal
 import python_qt_binding.QtGui
 import sys
-from diarc.view import View
-
+from diarc.view import View, ViewItemAttributes
+from diarc.util import TypedDict
 
 log = logging.getLogger('fabrik.fabrik_view')
 
+'''class HookItemAttributes(ViewItemAttributes):
+    def __init__(self):
+        super(HookItemAttributes, self).__init__()
+        self._bgcolor = "#ffffff"
+        self._border_color = "#000000"
+        self._label_color = "#000000"
+
+    @property
+    def bgcolor(self):
+        return QColor(self._bgcolor)
+
+    @bgcolor.setter
+    def bgcolor(self, value):
+        self._bgcolor = value
+
+    @property
+    def border_color(self):
+        return QColor(self._border_color)
+        
+    @border_color.setter
+    def border_color(self, value):
+        self._border_color = value
+            
+    @property
+    def label_color(self):
+        return QColor(self._label_color)
+
+    @label_color.setter
+    def label_color(self, value):
+        self._label_color = value
+
+class FlowItemAttributes(ViewItemAttributes):
+    def __init__(self):
+        super(FlowItemAttributes, self).__init__()
+        self._bgcolor = "#ffffff"
+        self._border_color = "#000000"
+        self._label_color = "#000000"
+
+    @property
+    def bgcolor(self):
+        return QColor(self._bgcolor)
+
+    @bgcolor.setter
+    def bgcolor(self, value):
+        self._bgcolor = value
+
+    @property
+    def border_color(self):
+        return QColor(self._border_color)
+        
+    @border_color.setter
+    def border_color(self, value):
+        self._border_color = value
+            
+    @property
+    def label_color(self):
+        return QColor(self._label_color)
+
+    @label_color.setter
+    def label_color(self, value):
+        self._label_color = value
+
+class HookItem(SpacerContainer.SpacerContainer.Item, HookItemAttributes):
+    def __init__(self, parent, hook_label):
+        log.debug("This is a hook item")
+        HookItemAttributes.__init__(self)
+        #parse_hook_label(hook_label)
+        self._hook_label = hook_label
+        self._layout_manager = typecheck(parent, FabrikLayoutManagerWidget, "parent")
+        self._view = parent.view()
+        self._adapter = parent.adapter()
+
+        #Deal with the parsed things.
+        #self.origin_exchange = 
+        #self.dest_exchange = 
+
+        #Locational specifications: info about the latch, snap items to the left/right, etc
+        #pbands, nbands
+
+        #Qt Properties
+        
+        #Create two hook linkages, one for each band
+
+    def release(self):
+        return
+
+    def set_attributes(self, attrs):
+        return
+
+    def link(self):
+        return
+
+    def mousePressEvent(self, event):
+        """ Captures the mouse press event for dragging """
+        pass
+
+    def mouseReleaseEvent(self, event):
+        pass #TODO
+
+    def mouseMoveEvent(self, event):
+        pass #TODO
+
+    def paint(self, painter, option, widget):
+        #Paint background
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        brush.setColor(self.bgcolor)
+        painter.fillRect(self.rect(),brush)
+        #Paint border
+        border_pen = QPen()
+        border_pen.setBrush(self.border_color)
+        border_pen.setStyle(Qt.SolidLine)
+        border_pen.setWidth(self.border_width)
+        painter.setPen(border_pen)
+        rect = self.geometry()
+        #Label
+        painter.setPen(self.label_color)
+        painter.rotate(-90)
+        fm = painter.fontMetrics()
+        elided = fm.elidedText(self.label, Qt.ElideRight, rect.height())
+        twidth = fm.width(elided)
+        painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
+
+    def itemA(self):
+        pass #TODO
+
+    def itemB(self):
+        pass #TODO
+
+class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
+    def __init__(self, parent, flow_label):
+        HookItemAttributes.__init__(self)
+        #parse_hook_label(hook_label)
+        self._flow_label = flow_label
+        self._layout_manager = typecheck(parent, FabrikLayoutManagerWidget, "parent")
+        self._view = parent.view()
+        self._adapter = parent.adapter()
+
+        #Deal with the parsed things.
+        #self.origin_node = 
+        #self.dest_node = 
+
+        #Locational specifications: info about the spacer items to the left/right, etc
+
+        #Qt Properties
+        
+        #Create a linkage
+
+    def release(self):
+        return
+
+    def set_attributes(self, attrs):
+        return
+
+    def link(self):
+        return
+
+    def mousePressEvent(self, event):
+        """ Captures the mouse press event for dragging """
+        pass
+
+    def mouseReleaseEvent(self, event):
+        pass #TODO
+
+    def mouseMoveEvent(self, event):
+        pass #TODO
+
+    def paint(self, painter, option, widget):
+        return
+        #Paint background
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        brush.setColor(self.bgcolor)
+        painter.fillRect(self.rect(),brush)
+        #Paint border
+        border_pen = QPen()
+        border_pen.setBrush(self.border_color)
+        border_pen.setStyle(Qt.SolidLine)
+        border_pen.setWidth(self.border_width)
+        painter.setPen(border_pen)
+        rect = self.geometry()
+        #Label
+        painter.setPen(self.label_color)
+        painter.rotate(-90)
+        fm = painter.fontMetrics()
+        elided = fm.elidedText(self.label, Qt.ElideRight, rect.height())
+        twidth = fm.width(elided)
+        painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
+
+    def itemA(self):
+        pass #TODO
+
+    def itemB(self):
+        pass #TODO
+'''
 class FabrikView(QGraphicsView, View):
     """ This is a Qt based stand-alone widget that provides a visual rendering 
     of a Topology. It provides a window into a self contained GraphicsScene in
@@ -36,7 +232,17 @@ class FabrikView(QGraphicsView, View):
     __remove_snap_item_signal = Signal(str)
     __set_snap_item_settings_signal = Signal(str, object, object, object, object)
     __set_snap_item_attributes_signal = Signal(str, qt_view.SnapItemAttributes)
+    '''
+    __add_hook_item_signal = Signal(str)
+    __remove_hook_item_signal = Signal(str)
+    __set_hook_item_settings_signal = Signal(str)
+    __set_hook_item_attributes_signal = Signal(str, HookItemAttributes)
 
+    __add_flow_item_signal = Signal(str)
+    __remove_flow_item_signal = Signal(str)
+    __set_flow_item_settings_signal = Signal(str)
+    __set_flow_item_attributes_signal = Signal(str, FlowItemAttributes)
+    '''
     def __init__(self):
         super(FabrikView, self).__init__(None)
         View.__init__(self)
@@ -54,18 +260,32 @@ class FabrikView(QGraphicsView, View):
 
         # Hook up the signals and slots
         self.__update_view_signal.connect(self.layout_manager.link)
+
         self.__add_block_item_signal.connect(self.layout_manager.add_block_item)
         self.__remove_block_item_signal.connect(self.layout_manager.remove_block_item)
         self.__set_block_item_settings_signal.connect(self.layout_manager.set_block_item_settings)
         self.__set_block_item_attributes_signal.connect(self.layout_manager.set_block_item_attributes)
+
         self.__add_band_item_signal.connect(self.layout_manager.add_band_item)
         self.__remove_band_item_signal.connect(self.layout_manager.remove_band_item)
         self.__set_band_item_settings_signal.connect(self.layout_manager.set_band_item_settings)
         self.__set_band_item_attributes_signal.connect(self.layout_manager.set_band_item_attributes)
+
         self.__add_snap_item_signal.connect(self.layout_manager.add_snap_item)
         self.__remove_snap_item_signal.connect(self.layout_manager.remove_snap_item)
         self.__set_snap_item_settings_signal.connect(self.layout_manager.set_snap_item_settings)
         self.__set_snap_item_attributes_signal.connect(self.layout_manager.set_snap_item_attributes)
+        '''
+        self.__add_hook_item_signal.connect(self.layout_manager.add_hook_item)
+        self.__remove_hook_item_signal.connect(self.layout_manager.remove_hook_item)
+        self.__set_hook_item_settings_signal.connect(self.layout_manager.set_hook_item_settings)
+        self.__set_hook_item_attributes_signal.connect(self.layout_manager.set_hook_item_attributes)
+
+        self.__add_flow_item_signal.connect(self.layout_manager.add_flow_item)
+        self.__remove_flow_item_signal.connect(self.layout_manager.remove_flow_item)
+        self.__set_flow_item_settings_signal.connect(self.layout_manager.set_flow_item_settings)
+        self.__set_flow_item_attributes_signal.connect(self.layout_manager.set_flow_item_attributes)
+        '''
         self.resize(1024,768)
         self.show()
 
@@ -120,7 +340,37 @@ class FabrikView(QGraphicsView, View):
 
     def set_snap_item_attributes(self, snapkey, attributes):
         self.__set_snap_item_attributes_signal.emit(snapkey, attributes)
+    '''
+    def add_hook_item(self, hook_label):
+        self.__add_hook_item_signal.emit(hook_label)
 
+    def has_hook_item(self, hook_label):
+        return self.layout_manager.has_hook_item(hook_label)
+
+    def remove_hook_item(self, hook_label): 
+        self.__remove_hook_item_signal.emit(hook_label)
+
+    def set_hook_item_settings(self, hook_label):
+        self.__set_hook_item_settings_signal.emit(hook_label) #TODO - what settings?
+
+    def set_snap_item_attributes(self, hook_label, attributes):
+        self.__set_hook_item_attributes_signal.emit(hook_label, attributes)
+
+    def add_flow_item(self, flow_label):
+        self.__add_flow_item_signal.emit(flow_label)
+
+    def has_flow_item(self, flow_label):
+        return self.layout_manager.has_flow_item(flow_label)
+
+    def remove_flow_item(self, flow_label): 
+        self.__remove_flow_item_signal.emit(flow_label)
+
+    def set_flow_item_settings(self, flow_label):
+        self.__set_flow_item_settings_signal.emit(flow_label) #TODO - what settings?
+
+    def set_flow_item_attributes(self, flow_label, attributes):
+        self.__set_flow_item_attributes_signal.emit(flow_label, attributes)
+    '''
     def wheelEvent(self,event):
         """ Implements scrollwheel zooming """
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
@@ -135,6 +385,7 @@ class FabrikBlockItem(qt_view.BlockItem):
         super(FabrikBlockItem, self).__init__(parent, block_index)
 
     def paint(self,painter,option,widget):
+        """Overwrites BlockItem.paint so that we can fill in the block rectangles"""
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         brush.setColor(self.bgcolor)
@@ -149,6 +400,8 @@ class FabrikBlockItem(qt_view.BlockItem):
 class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def __init__(self, view):
         super(FabrikLayoutManagerWidget, self).__init__(view)
+       # self._hook_items = TypedDict(int,HookItem)    # altitude    #TypedList(BandItem)
+       # self._flow_items = TypedDict(str,FlowItem)  # snapkey  #TypedList(SnapItem)
         log.debug("Initialized Fabrik Layout Manager")
 
     def add_block_item(self, index):
@@ -159,6 +412,79 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         item = FabrikBlockItem(self, index)
         self._block_items[index] = item
         return item
+'''
+    def add_hook_item(self, hook_label):
+        #hook_label gets passed in as a QString, since it goes across a signal/slot interface
+        hook_label = str(hook_label)
+        log.debug("... Adding FabrikHookItem %s"%hook_label)
+        if hook_label in self._hook_items:
+            raise DuplicateItemExistsError("HookItem with hook_label %s already exists"%(hook_label))
+        item = HookItem(self, hook_label)
+        self._hook_items[hook_label] = item
+        return item
 
-#app = python_qt_binding.QtGui.QApplication(sys.argv)
-#view = FabrikView()
+    def remove_hook_item(self, hook_label):
+        #hook_label gets passed in as a QString, since it goes across a signal/slot interface
+        hook_label = str(hook_label)
+        log.debug("... Removing HookItem %s"%hook_label)
+        self._hook_items[hook_label].release() #TODO
+        self._hook_items.pop(hook_label) 
+
+    def set_hook_item_settings(self, hook_label):
+        #hook_label gets passed in as a QString, since it goes across a signal/slot interface
+        hook_label = str(hook_label)
+        #TODO: what settings?
+        return
+
+    def set_hook_item_attributes(self, hook_label, attributes):
+        #hook_label gets passed in as a QString, since it goes across a signal/slot interface
+        hook_label = str(hook_label)
+        self._hook_items[hook_label].set_attributes(attributes)
+
+    def has_hook_item(self, hook_label):
+        return True if hook_label in self._hook_items else False
+
+
+    def get_hook_item(self, hook_label):
+        #hook_label gets passed in as a QString, since it goes across a signal/slot interface
+        hook_label = str(hook_label)
+        return self._hook_items[hook_label]
+
+    def add_flow_item(self, flow_label):
+        #flow_label gets passed in as a QString, since it goes across a signal/slot interface
+        flow_label = str(flow_label)
+        log.debug("... Adding FabrikFlowItem %s"%flow_label)
+        if flow_label in self._flow_items:
+            raise DuplicateItemExistsError("FlowItem with flow_label %s already exists"%(flow_label))
+        item = FlowItem(self, flow_label)
+        self._flow_items[flow_label] = item
+        return item
+
+    def remove_flow_item(self, flow_label):
+        #flow_label gets passed in as a QString, since it goes across a signal/slot interface
+        flow_label = str(flow_label)
+        log.debug("... Removing FlowItem %s"%flow_label)
+        self._flow_items[flow_label].release() #TODO
+        self._flow_items.pop(flow_label) 
+
+    def set_flow_item_settings(self, flow_label):
+        #flow_label gets passed in as a QString, since it goes across a signal/slot interface
+        flow_label = str(flow_label)
+        #TODO: what settings?
+
+    def set_flow_item_attributes(self, flow_label, attributes):
+        #flow_label gets passed in as a QString, since it goes across a signal/slot interface
+        flow_label = str(flow_label)
+        self._flow_items[flow_label].set_attributes(attributes)
+
+    def has_flow_item(self, flow_label):
+        return True if flow_label in self._flow_items else False
+
+
+    def get_flow_item(self, flow_label):
+        #flow_label gets passed in as a QString, since it goes across a signal/slot interface
+        flow_label = str(flow_label)
+        return self._flow_items[flow_label]
+'''
+app = python_qt_binding.QtGui.QApplication(sys.argv)
+view = FabrikView()
