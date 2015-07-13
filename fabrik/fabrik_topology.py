@@ -29,7 +29,7 @@
 #   Sink     = Consumer -> Snap - emitter
 #   Source   = Producer -> Snap - collector
 #            = Transfer -> Hook
-#            = Flow     -> Feed
+#            = Feed     -> Flow
 #
 
 from diarc.topology import *
@@ -41,7 +41,7 @@ class FabrikGraph(Topology):
     def __init__(self):
         super(FabrikGraph,self).__init__()
         self._transfers = TypedList(Transfer)
-        self._flows = TypedList(Flow)
+        self._feeds = TypedList(Feed)
 
     @property
     def nodes(self):
@@ -60,8 +60,8 @@ class FabrikGraph(Topology):
         return self._transfers
 
     @property
-    def flows(self):
-        return self._flows
+    def feeds(self):
+        return self._feeds
 
     def nextFreeNodeIndex(self):
         """ returns the next available node index """
@@ -209,14 +209,14 @@ class Consumer(Sink):
         # NOTE: See note on Node class about why this MUST be a property.
         return self.vertex
 
-class Flow(object):
+class Feed(object):
     """An object that represents messages flowing from a node to another node;
     Seen, for example, from a queue to a serivce buddy"""
     def __init__(self, fg, node_origin, node_dest):
         self._topology = typecheck(fg, FabrikGraph, "fg")
         self._origin = typecheck(node_origin, Node, "origin")
         self._dest = typecheck(node_dest, Node, "dest")
-        self._topology._flows.append(self)
+        self._topology._feeds.append(self)
 
     @property
     def origin(self):

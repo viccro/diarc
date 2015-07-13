@@ -114,12 +114,12 @@ def add_transfer(fabrik, publishing_exchange, exchange, routingKeys):
     interExchTransfer = Transfer(fabrik, publishing_exchange, exchange, routingKeys)
     log.debug("Adding Transfer from "+interExchTransfer.origin.name+" to "+interExchTransfer.dest.name)
 
-def add_flow(fabrik, origin_node, dest_node):
-    for f in fabrik.flows:
+def add_feed(fabrik, origin_node, dest_node):
+    for f in fabrik.feeds:
         if ((f.origin == origin_node) and (f.dest == dest_node)):
             return
-    node_to_node = Flow(fabrik, origin_node, dest_node)
-    log.debug("Adding Flow from "+node_to_node.origin.name+" to "+node_to_node.dest.name)
+    node_to_node = Feed(fabrik, origin_node, dest_node)
+    log.debug("Adding Feed from "+node_to_node.origin.name+" to "+node_to_node.dest.name)
 
 def parse_pub_bindings(fabrik, bindings, publishing_exchange):
     '''Add exchanges and bindings for next steps out (recursively parsing bindings)'''
@@ -158,7 +158,7 @@ def set_sub_features(sub_options, fabrik, filename, sb):
         except:
             queueName = subDict['queue-spec']
         queue = add_queue(fabrik, queueName)
-        add_flow(fabrik, queue, sb)
+        add_feed(fabrik, queue, sb)
         if 'bindings' in subDict.keys():
             parse_sub_bindings(fabrik, subDict['bindings'], queue)
 
