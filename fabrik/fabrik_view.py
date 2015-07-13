@@ -1,7 +1,7 @@
 from qt_view import qt_view
 from qt_view import SpacerContainer
 import logging
-from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene
+from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene, QGraphicsAnchorLayout
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtCore import pyqtSignal as Signal
 import python_qt_binding.QtGui
@@ -11,7 +11,7 @@ from diarc.util import TypedDict
 
 log = logging.getLogger('fabrik.fabrik_view')
 
-'''class HookItemAttributes(ViewItemAttributes):
+class HookItemAttributes(ViewItemAttributes):
     def __init__(self):
         super(HookItemAttributes, self).__init__()
         self._bgcolor = "#ffffff"
@@ -42,7 +42,7 @@ log = logging.getLogger('fabrik.fabrik_view')
     def label_color(self, value):
         self._label_color = value
 
-class FlowItemAttributes(ViewItemAttributes):
+'''class FlowItemAttributes(ViewItemAttributes):
     def __init__(self):
         super(FlowItemAttributes, self).__init__()
         self._bgcolor = "#ffffff"
@@ -72,7 +72,7 @@ class FlowItemAttributes(ViewItemAttributes):
     @label_color.setter
     def label_color(self, value):
         self._label_color = value
-
+'''
 class HookItem(SpacerContainer.SpacerContainer.Item, HookItemAttributes):
     def __init__(self, parent, hook_label):
         log.debug("This is a hook item")
@@ -139,7 +139,7 @@ class HookItem(SpacerContainer.SpacerContainer.Item, HookItemAttributes):
 
     def itemB(self):
         pass #TODO
-
+'''
 class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
     def __init__(self, parent, flow_label):
         HookItemAttributes.__init__(self)
@@ -232,12 +232,12 @@ class FabrikView(QGraphicsView, View):
     __remove_snap_item_signal = Signal(str)
     __set_snap_item_settings_signal = Signal(str, object, object, object, object)
     __set_snap_item_attributes_signal = Signal(str, qt_view.SnapItemAttributes)
-    '''
+    
     __add_hook_item_signal = Signal(str)
     __remove_hook_item_signal = Signal(str)
     __set_hook_item_settings_signal = Signal(str)
     __set_hook_item_attributes_signal = Signal(str, HookItemAttributes)
-
+    '''
     __add_flow_item_signal = Signal(str)
     __remove_flow_item_signal = Signal(str)
     __set_flow_item_settings_signal = Signal(str)
@@ -275,12 +275,12 @@ class FabrikView(QGraphicsView, View):
         self.__remove_snap_item_signal.connect(self.layout_manager.remove_snap_item)
         self.__set_snap_item_settings_signal.connect(self.layout_manager.set_snap_item_settings)
         self.__set_snap_item_attributes_signal.connect(self.layout_manager.set_snap_item_attributes)
-        '''
+        
         self.__add_hook_item_signal.connect(self.layout_manager.add_hook_item)
         self.__remove_hook_item_signal.connect(self.layout_manager.remove_hook_item)
         self.__set_hook_item_settings_signal.connect(self.layout_manager.set_hook_item_settings)
         self.__set_hook_item_attributes_signal.connect(self.layout_manager.set_hook_item_attributes)
-
+        '''
         self.__add_flow_item_signal.connect(self.layout_manager.add_flow_item)
         self.__remove_flow_item_signal.connect(self.layout_manager.remove_flow_item)
         self.__set_flow_item_settings_signal.connect(self.layout_manager.set_flow_item_settings)
@@ -340,7 +340,7 @@ class FabrikView(QGraphicsView, View):
 
     def set_snap_item_attributes(self, snapkey, attributes):
         self.__set_snap_item_attributes_signal.emit(snapkey, attributes)
-    '''
+    
     def add_hook_item(self, hook_label):
         self.__add_hook_item_signal.emit(hook_label)
 
@@ -353,9 +353,9 @@ class FabrikView(QGraphicsView, View):
     def set_hook_item_settings(self, hook_label):
         self.__set_hook_item_settings_signal.emit(hook_label) #TODO - what settings?
 
-    def set_snap_item_attributes(self, hook_label, attributes):
+    def set_hook_item_attributes(self, hook_label, attributes):
         self.__set_hook_item_attributes_signal.emit(hook_label, attributes)
-
+    '''
     def add_flow_item(self, flow_label):
         self.__add_flow_item_signal.emit(flow_label)
 
@@ -412,7 +412,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         item = FabrikBlockItem(self, index)
         self._block_items[index] = item
         return item
-'''
+
     def add_hook_item(self, hook_label):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
@@ -449,7 +449,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
         return self._hook_items[hook_label]
-
+    '''
     def add_flow_item(self, flow_label):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
         flow_label = str(flow_label)
@@ -485,6 +485,37 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
         flow_label = str(flow_label)
         return self._flow_items[flow_label]
-'''
+    '''
+
+    def link(self):
+        log.debug("*** Begining Linking ***")
+        sys.stdout.flush()
+        # Create a new anchored layout. Until I can figure out how to remove
+        # objects from the layout, I need to make a new one each time
+        l = QGraphicsAnchorLayout()
+        l.setSpacing(0.0)
+        self.setLayout(l)
+
+        # Anchor BandStack to Layout, and BlockContainer to BandStack
+        self.layout().addAnchor(self.block_container, Qt.AnchorTop, self.layout(), Qt.AnchorTop)
+        self.layout().addAnchor(self.block_container, Qt.AnchorLeft, self.layout(), Qt.AnchorLeft)
+        self.layout().addAnchor(self.bandStack, Qt.AnchorLeft, self.block_container, Qt.AnchorLeft)
+        self.layout().addAnchor(self.bandStack, Qt.AnchorRight, self.block_container, Qt.AnchorRight)
+
+        # Link block items
+        for item in self._block_items.values():
+            item.link()
+
+        # Link band items
+        for item in self._band_items.values():
+            item.link()
+
+        # Link Snap Items
+        for item in self._snap_items.values():
+            item.link()
+
+        log.debug("*** Finished Linking ***\n")
+        sys.stdout.flush()
+
 app = python_qt_binding.QtGui.QApplication(sys.argv)
 view = FabrikView()
