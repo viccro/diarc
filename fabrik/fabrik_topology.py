@@ -34,6 +34,7 @@
 
 from diarc.topology import *
 import logging
+import hooklabel
 
 log = logging.getLogger('fabrik.fabrik_parser')
 
@@ -42,6 +43,7 @@ class FabrikGraph(Topology):
         super(FabrikGraph,self).__init__()
         self._transfers = TypedList(Transfer)
         self._feeds = TypedList(Feed)
+        self.hide_disconnected_snaps = False
 
     @property
     def nodes(self):
@@ -60,6 +62,10 @@ class FabrikGraph(Topology):
         return self._transfers
 
     @property
+    def hooks(self):
+        return dict([(t.hook.hooklabel(), t.hook) for t in self.transfers])
+
+    @property
     def feeds(self):
         return self._feeds
 
@@ -71,7 +77,6 @@ class FabrikGraph(Topology):
         """ returns a 2-tuple of (posAltitude,negAltitude) of the avaliable altitudes """
         altitudes = [band.altitude for band in self.bands.values()] + [0]
         return (max(altitudes)+1,min(altitudes)-1)
-
 
 
 
@@ -266,6 +271,9 @@ class Hook(object):
         self._transfer = typecheck(transfer, Transfer, "transfer")
         self._order = None    
     
+    def hooklabel(self):
+        return hooklabel.gen_hooklabel(self.origin.posBand.altitude, self.dest.posBand.altitude, self.latch.block.index)
+
     def posBandLink(self):
 #TODO something
         pBand = self._transfer.origin.posBand
@@ -279,6 +287,14 @@ class Hook(object):
     @property
     def latch(self):
         return self._transfer._latch
+
+    @property
+    def origin(self):
+        return self._transfer._origin
+
+    @property
+    def dest(self):
+        return self._transfer._dest
 
     @property
     def bandLinks(self):

@@ -1,13 +1,15 @@
 from qt_view import qt_view
 from qt_view import SpacerContainer
 import logging
+import hooklabel
 from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene, QGraphicsAnchorLayout
+from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtCore import pyqtSignal as Signal
 import python_qt_binding.QtGui
 import sys
 from diarc.view import View, ViewItemAttributes
-from diarc.util import TypedDict
+from diarc.util import TypedDict, typecheck
 
 log = logging.getLogger('fabrik.fabrik_view')
 
@@ -42,6 +44,7 @@ class HookItemAttributes(ViewItemAttributes):
     def label_color(self, value):
         self._label_color = value
 
+
 '''class FlowItemAttributes(ViewItemAttributes):
     def __init__(self):
         super(FlowItemAttributes, self).__init__()
@@ -73,25 +76,87 @@ class HookItemAttributes(ViewItemAttributes):
     def label_color(self, value):
         self._label_color = value
 '''
-class HookItem(SpacerContainer.SpacerContainer.Item, HookItemAttributes):
+class HookSpacer(SpacerContainer.SpacerContainer.Spacer):
+    def __init__(self,parent):
+        super(HookSpacer, self).__init__(parent)
+        self._layout_manager = parent.parent
+        self._view = parent.parent.view()
+        self._adapter = parent.parent.adapter()
+        self.dragOver = False
+
+        #Qt Properties
+        self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
+        self.collapseWidth()
+        self.setAcceptDrops(False)
+        
+#        @property
+#        def leftHook(self):
+#            return self.itemA
+
+#        @property
+#        def rightHook(self):
+#            return self.itemB
+
+        @property
+        def bottomBand(self):
+            if self.itemA._altitude < self.itemB._altitude:
+                return self.itemA
+            return self.itemB
+
+        @property
+        def topBand(self):
+            if self.itemA.altitude < self.itemB.altitude:
+                return self.itemB
+            return self.itemA
+
+        @property
+        def latch(self):
+            return self.latch
+
+    def link(self):
+        #TODO
+        l = self.parent.parent.layout()
+        try:
+            l.addAnchor(self, Qt.AnchorBottom, self.bottomBand, Qt.AnchorTop)
+            print "Yup"
+        except:
+            print "Nope: "+str(self.bottomBand.index)
+        l.addAnchor(self, Qt.AnchorTop, self.topBand, Qt.AnchorBottom)
+        l.addAnchor(self, Qt.AnchorLeft, self.latch, Qt.AnchorLeft)
+        l.addAnchor(self, Qt.AnchorRight, self.latch, Qt.AnchorRight)
+
+    def paint(self, painter, option, widget):
+        painter.setPen(Qt.NoPen)
+        painter.drawRect(self.rect())
+
+class HookItem(QGraphicsWidget,HookItemAttributes):
     def __init__(self, parent, hook_label):
-        log.debug("This is a hook item")
+        super(HookItem, self).__init__(parent)
         HookItemAttributes.__init__(self)
         #parse_hook_label(hook_label)
         self._hook_label = hook_label
         self._layout_manager = typecheck(parent, FabrikLayoutManagerWidget, "parent")
         self._view = parent.view()
         self._adapter = parent.adapter()
+#        print parent.get_hook_item(hook_label)
+
+        self.originAltitude, self.destAltitude, self.latchIndex = hooklabel.parse_hooklabel(hook_label)
 
         #Deal with the parsed things.
-        #self.origin_exchange = 
-        #self.dest_exchange = 
+        self.origin_band_item = self._layout_manager.get_band_item(self.originAltitude)
+        self.dest_band_item = self._layout_manager.get_band_item(self.destAltitude)
+        self.latch = self._layout_manager.get_block_item(self.latchIndex)
+        self._container = self.latch
 
         #Locational specifications: info about the latch, snap items to the left/right, etc
         #pbands, nbands
 
         #Qt Properties
-        
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
+#        self.set_width(20)
+        self.setPreferredHeight(20)
+        self.setMinimumHeight(20)
+
         #Create two hook linkages, one for each band
 
     def release(self):
@@ -135,10 +200,10 @@ class HookItem(SpacerContainer.SpacerContainer.Item, HookItemAttributes):
         painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
 
     def itemA(self):
-        pass #TODO
+        return self.origin_band_item
 
     def itemB(self):
-        pass #TODO
+        return self.dest_band_item
 '''
 class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
     def __init__(self, parent, flow_label):
@@ -397,10 +462,24 @@ class FabrikBlockItem(qt_view.BlockItem):
         painter.setPen(border_pen)
         painter.drawRect(self.rect())
 
+class FabrikBandItem(qt_view.BandItem):
+    def __init__(self, parent, altitude, rank):
+        super(FabrikBandItem, self).__init__(parent, altitude, rank)
+
+    def link(self):
+        print "linking"
+        sys.stdout.flush()
+        # Assign the vertical anchors
+        super(qt_view.BandItem,self).link()
+        # Assign the horizontal Anchors
+        l = self.parent.layout()
+        l.addAnchor(self, Qt.AnchorLeft, self._layout_manager.block_container, Qt.AnchorLeft)
+        l.addAnchor(self, Qt.AnchorRight, self._layout_manager.block_container, Qt.AnchorRight)
+
 class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def __init__(self, view):
         super(FabrikLayoutManagerWidget, self).__init__(view)
-       # self._hook_items = TypedDict(int,HookItem)    # altitude    #TypedList(BandItem)
+        self._hook_items = TypedDict(str,HookItem)    # altitude    #TypedList(BandItem)
        # self._flow_items = TypedDict(str,FlowItem)  # snapkey  #TypedList(SnapItem)
         log.debug("Initialized Fabrik Layout Manager")
 
@@ -411,6 +490,15 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
             raise qt_view.DuplicateItemExistsError("Block Item with index %d already exists"%(index))
         item = FabrikBlockItem(self, index)
         self._block_items[index] = item
+        return item
+
+    def add_band_item(self, altitude, rank):
+        """ Create a new drawable object to correspond to a Band. """
+        log.debug("... Adding FabrikBandItem with altitude %d"%altitude)
+        if altitude in self._band_items:
+            raise DuplicateItemExistsError("BandItem with altitude %d already exists"%(altitude))
+        item = FabrikBandItem(self, altitude, rank)
+        self._band_items[altitude] = item
         return item
 
     def add_hook_item(self, hook_label):
@@ -439,6 +527,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def set_hook_item_attributes(self, hook_label, attributes):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
+        print self._hook_items.keys()
         self._hook_items[hook_label].set_attributes(attributes)
 
     def has_hook_item(self, hook_label):
@@ -508,14 +597,24 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
 
         # Link band items
         for item in self._band_items.values():
+            print item.left_most_snap
             item.link()
+        print self._band_items.keys()
 
         # Link Snap Items
         for item in self._snap_items.values():
             item.link()
 
+        # Link Hook Items
+        for item in self._hook_items.values():
+            print "Linking " + item._hook_label
+            item.link()
+
         log.debug("*** Finished Linking ***\n")
         sys.stdout.flush()
+
+class DuplicateItemExistsError(Exception):
+    pass
 
 app = python_qt_binding.QtGui.QApplication(sys.argv)
 view = FabrikView()
