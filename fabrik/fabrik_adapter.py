@@ -172,7 +172,7 @@ class FabrikAdapter(BaseAdapter):
         
         # Add new BlockItems for blocks in model that are not in view
         for hooklabel in hooks:
-            self._view.add_hook_item(hooklabel)
+#            self._view.add_hook_item(hooklabel)
             self._cached_hook_item_labels.append(hooklabel)
 
 
@@ -212,16 +212,7 @@ class FabrikAdapter(BaseAdapter):
         sys.stdout.flush()
         # Compute top and bottom bands, rank, leftmost, and rightmost snaps
         for altitude in bands:
-            print altitude
-            # Skip bands that don't have an item 
-            if not bands[altitude].isUsed():
-                print "Nope"
-                # The assertion below must be true for qt objects, however this 
-                # code should remain view implementation agnostic and the so
-                # the asserition is commented out.
-#                 item_alts = [a for a in self._view.layout_manager._band_items]
-#                 assert(altitude not in item_alts)
-                continue
+            print altitude, bands[altitude]._edge.name
             band = bands[altitude]
             top_alt = band.topBand.altitude if band.topBand else None
             bot_alt = band.bottomBand.altitude if band.bottomBand else None
@@ -231,15 +222,31 @@ class FabrikAdapter(BaseAdapter):
             collectors.sort(lambda x,y: x.block.index - y.block.index)
             left_snap = None
             right_snap = None
-            if band.isPositive:
-                left_snap = emitters[0]
-                right_snap = collectors[-1]
-            else:
-                left_snap = collectors[0]
-                right_snap = emitters[-1]
+            # Skip bands that don't have an item 
+#            if not bands[altitude].isUsed():
+#                print "wub"
+                # The assertion below must be true for qt objects, however this 
+                # code should remain view implementation agnostic and the so
+                # the asserition is commented out.
+#                 item_alts = [a for a in self._view.layout_manager._band_items]
+#                 assert(altitude not in item_alts)
+#                self._view.set_band_item_settings(altitude, band.rank, top_alt, bot_alt, None, None )
+#                continue
+            try:
+                if band.isPositive:
+                    left_snap = emitters[0]
+                    right_snap = collectors[-1]
+                else:
+                    left_snap = collectors[0]
+                    right_snap = emitters[-1]
+                print "here!"
+            except:
+                pass
             left_snapkey = left_snap.snapkey() if left_snap is not None else None
             right_snapkey = right_snap.snapkey() if right_snap is not None else None
             self._view.set_band_item_settings(altitude, band.rank, top_alt, bot_alt, left_snapkey, right_snapkey )
+
+#TODO hook neighbor info
 
         log.debug("*** Finished Computing neighbors ***")
         log.debug("*** Assigning Attributes ***")
@@ -260,9 +267,9 @@ class FabrikAdapter(BaseAdapter):
             self._view.set_snap_item_attributes(snapkey, attributes)
 
         # Update hook visual attributes
-        for hooklabel in hooks:
-            attributes = self.get_hook_item_attributes(hooklabel)
-            self._view.set_hook_item_attributes(hooklabel, attributes)
+#        for hooklabel in hooks:
+#            attributes = self.get_hook_item_attributes(hooklabel)
+#            self._view.set_hook_item_attributes(hooklabel, attributes)
 
         log.debug("*** Finished Assigning Attributes ***")
         self._view.update_view()

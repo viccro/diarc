@@ -105,5 +105,6 @@ if __name__=="__main__":
     
     try:
         available_tests[args.viewName](args)
-    except:
+    except Exception as e:
+        print e
         print "'./run.py -h' for help"

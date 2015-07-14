@@ -467,13 +467,12 @@ class FabrikBandItem(qt_view.BandItem):
         super(FabrikBandItem, self).__init__(parent, altitude, rank)
 
     def link(self):
-        print "linking"
         sys.stdout.flush()
         # Assign the vertical anchors
         super(qt_view.BandItem,self).link()
         # Assign the horizontal Anchors
         l = self.parent.layout()
-        l.addAnchor(self, Qt.AnchorLeft, self._layout_manager.block_container, Qt.AnchorLeft)
+        l.addAnchor(self, Qt.AnchorLeft, self._layout_manager.block_container, Qt.AnchorLeft) #TODO: return to left_most_snap after hooks work
         l.addAnchor(self, Qt.AnchorRight, self._layout_manager.block_container, Qt.AnchorRight)
 
 class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
@@ -500,6 +499,24 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         item = FabrikBandItem(self, altitude, rank)
         self._band_items[altitude] = item
         return item
+
+    def set_band_item_settings(self, altitude, rank,
+                               top_band_alt, bot_band_alt,
+                               leftmost_snapkey, rightmost_snapkey):
+        item = self._band_items[altitude]
+        item.rank = rank
+        item.top_band = self._band_items[top_band_alt] if top_band_alt is not None else None
+        item.bot_band = self._band_items[bot_band_alt] if bot_band_alt is not None else None
+#        print str(item.top_band.altitude) 
+#        print str(item.bot_band.altitude)
+        if leftmost_snapkey == '':
+            item.left_most_snap = self.bandStack
+        else:
+            item.left_most_snap = self._snap_items[str(leftmost_snapkey)]
+        if rightmost_snapkey == '':
+            item.right_most_snap = self.bandStack
+        else:
+            item.right_most_snap = self._snap_items[str(rightmost_snapkey)]
 
     def add_hook_item(self, hook_label):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
@@ -606,9 +623,9 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
             item.link()
 
         # Link Hook Items
-        for item in self._hook_items.values():
-            print "Linking " + item._hook_label
-            item.link()
+#        for item in self._hook_items.values():
+#            print "Linking " + item._hook_label
+#            item.link()
 
         log.debug("*** Finished Linking ***\n")
         sys.stdout.flush()

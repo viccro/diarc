@@ -140,7 +140,10 @@ class Exchange(Edge):
     def __init__(self,fg,name=None):
         typecheck(fg,FabrikGraph,"fg")
         super(Exchange,self).__init__(fg)
-        
+
+        self._pBand = FabrikBand(self,True)
+        self._nBand = FabrikBand(self,False)
+
         # Dumb placement - just get the enxt free altitudes
         self.posBand.altitude,self.negBand.altitude = fg.nextFreeAltitudes()
         self.posBand.rank = self.posBand.altitude
@@ -165,6 +168,13 @@ class Exchange(Edge):
         return self.sinks
 
 
+
+class FabrikBand(Band):
+    def __init__(self, edge, isPositive):
+        super(FabrikBand, self).__init__(edge, isPositive)
+
+    def isUsed(self):
+        return True
 
 
 class Producer(Source):
