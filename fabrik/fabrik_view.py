@@ -17,7 +17,7 @@ class HookItemAttributes(ViewItemAttributes):
     def __init__(self):
         super(HookItemAttributes, self).__init__()
         self._bgcolor = "#ffffff"
-        self._border_color = "#000000"
+        self._border_color = "#ffffff"
         self._label_color = "#000000"
 
     @property
@@ -89,36 +89,28 @@ class HookSpacer(SpacerContainer.SpacerContainer.Spacer):
         self.collapseWidth()
         self.setAcceptDrops(False)
         
-#        @property
-#        def leftHook(self):
-#            return self.itemA
-
-#        @property
-#        def rightHook(self):
-#            return self.itemB
-
-        @property
-        def bottomBand(self):
-            if self.itemA._altitude < self.itemB._altitude:
-                return self.itemA
-            return self.itemB
-
-        @property
-        def topBand(self):
-            if self.itemA.altitude < self.itemB.altitude:
-                return self.itemB
+    @property
+    def bottomBand(self):
+        if self.itemA._altitude < self.itemB._altitude:
             return self.itemA
+        return self.itemB
 
-        @property
-        def latch(self):
-            return self.latch
+    @property
+    def topBand(self):
+        if self.itemA.altitude < self.itemB.altitude:
+            return self.itemB
+        return self.itemA
+
+    @property
+    def latch(self):
+        return self.latch
 
     def link(self):
         #TODO
         l = self.parent.parent.layout()
         try:
             l.addAnchor(self, Qt.AnchorBottom, self.bottomBand, Qt.AnchorTop)
-            print "Yup"
+            print "linked"
         except:
             print "Nope: "+str(self.bottomBand.index)
         l.addAnchor(self, Qt.AnchorTop, self.topBand, Qt.AnchorBottom)
@@ -133,19 +125,17 @@ class HookItem(QGraphicsWidget,HookItemAttributes):
     def __init__(self, parent, hook_label):
         super(HookItem, self).__init__(parent)
         HookItemAttributes.__init__(self)
-        #parse_hook_label(hook_label)
         self._hook_label = hook_label
         self._layout_manager = typecheck(parent, FabrikLayoutManagerWidget, "parent")
         self._view = parent.view()
         self._adapter = parent.adapter()
 #        print parent.get_hook_item(hook_label)
 
-        self.originAltitude, self.destAltitude, self.latchIndex = hooklabel.parse_hooklabel(hook_label)
+        self.originAltitude, self.destAltitude, self.latchIndex = hooklabel.parse_hooklabel(self._hook_label)
 
         #Deal with the parsed things.
         self.origin_band_item = self._layout_manager.get_band_item(self.originAltitude)
         self.dest_band_item = self._layout_manager.get_band_item(self.destAltitude)
-        self.latch = self._layout_manager.get_block_item(self.latchIndex)
         self._container = self.latch
 
         #Locational specifications: info about the latch, snap items to the left/right, etc
@@ -157,15 +147,51 @@ class HookItem(QGraphicsWidget,HookItemAttributes):
         self.setPreferredHeight(20)
         self.setMinimumHeight(20)
 
-        #Create two hook linkages, one for each band
+    @property
+    def itemA(self):
+        return self.origin_band_item
+
+    @property
+    def itemB(self):
+        return self.dest_band_item
+
+    
+    def bottomBand(self):
+#        print "Bottom Band"
+        if self.itemA.altitude < self.itemB.altitude:
+            return self.itemA
+        return self.itemB
+
+    @property
+    def topBand(self):
+        if self.itemA.altitude < self.itemB.altitude:
+            return self.itemB
+        return self.itemA
+
+    @property
+    def latch(self):
+        return self._layout_manager.get_block_item(self.latchIndex)
 
     def release(self):
-        return
+        self.setVisible(False)
 
     def set_attributes(self, attrs):
+        self.setVisible(True)
+        self.update(self.rect())
         return
 
     def link(self):
+        #TODO
+        l = self._layout_manager
+        print dir(self)
+        try:
+            l.addAnchor(self, Qt.AnchorBottom, self.bottomBand, Qt.AnchorTop)
+            print "linked Item"
+        except:
+            print "Nope: Item: ", self.bottomBand().altitude
+        l.addAnchor(self, Qt.AnchorTop, self.topBand, Qt.AnchorBottom)
+        l.addAnchor(self, Qt.AnchorLeft, self.latch, Qt.AnchorLeft)
+        
         return
 
     def mousePressEvent(self, event):
@@ -199,11 +225,6 @@ class HookItem(QGraphicsWidget,HookItemAttributes):
         twidth = fm.width(elided)
         painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
 
-    def itemA(self):
-        return self.origin_band_item
-
-    def itemB(self):
-        return self.dest_band_item
 '''
 class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
     def __init__(self, parent, flow_label):
@@ -507,8 +528,6 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         item.rank = rank
         item.top_band = self._band_items[top_band_alt] if top_band_alt is not None else None
         item.bot_band = self._band_items[bot_band_alt] if bot_band_alt is not None else None
-#        print str(item.top_band.altitude) 
-#        print str(item.bot_band.altitude)
         if leftmost_snapkey == '':
             item.left_most_snap = self.bandStack
         else:
@@ -544,12 +563,10 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def set_hook_item_attributes(self, hook_label, attributes):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
-        print self._hook_items.keys()
         self._hook_items[hook_label].set_attributes(attributes)
 
     def has_hook_item(self, hook_label):
         return True if hook_label in self._hook_items else False
-
 
     def get_hook_item(self, hook_label):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
@@ -614,18 +631,15 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
 
         # Link band items
         for item in self._band_items.values():
-            print item.left_most_snap
             item.link()
-        print self._band_items.keys()
 
         # Link Snap Items
         for item in self._snap_items.values():
             item.link()
 
         # Link Hook Items
-#        for item in self._hook_items.values():
-#            print "Linking " + item._hook_label
-#            item.link()
+        for item in self._hook_items.values():
+            item.link()
 
         log.debug("*** Finished Linking ***\n")
         sys.stdout.flush()
