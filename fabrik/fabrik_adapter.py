@@ -60,8 +60,8 @@ class FabrikAdapter(BaseAdapter):
             attrs.label_color = "black"
         else:
             attrs.bgcolor = "white"
-            attrs.border_color = "white"
-            attrs.label_color = "white"
+            attrs.border_color = "blue"
+            attrs.label_color = "blue"
         attrs.border_width = 1
         attrs.label = str(block._vertex.name)
         attrs.spacerwidth = 20

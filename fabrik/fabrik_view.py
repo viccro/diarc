@@ -16,9 +16,10 @@ log = logging.getLogger('fabrik.fabrik_view')
 class HookItemAttributes(ViewItemAttributes):
     def __init__(self):
         super(HookItemAttributes, self).__init__()
-        self._bgcolor = "#ffffff"
-        self._border_color = "#ffffff"
+        self._bgcolor = "red"
+        self._border_color = "red"
         self._label_color = "#000000"
+        print "ATTRIBUTES"
 
     @property
     def bgcolor(self):

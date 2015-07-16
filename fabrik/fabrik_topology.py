@@ -131,10 +131,12 @@ class Wormhole(Node):
         log.debug( "Adding Wormhole " + str(name))
 
 class Latch(Node):
-    def __init__(self, fg):
+    def __init__(self, fg, name=None):
         typecheck(fg,FabrikGraph, "fg")
         super(Latch,self).__init__(fg)
         self.nodeType = "latch"
+        self.name = name
+        log.debug( "Adding Latch" + str(name))
 
 class Exchange(Edge):
     def __init__(self,fg,name=None):
@@ -253,7 +255,7 @@ class Transfer(object):
             if (exchange_origin == transfer.origin) and (exchange_dest == transfer.dest) and (routingKeys == transfer.routingKeys):
                 raise Exception("Duplicate exchange transfer! "+exchange_origin.name+"->"+exchange_dest.name+", routing-keys:"+str(transfer.routingKeys))
         self._topology._transfers.append(self)
-        self._latch = Latch(self._topology)
+        self._latch = Latch(self._topology, str(self._origin.name) + "->" + str(self._dest.name))
 
     @property
     def origin(self):
@@ -296,7 +298,7 @@ class Hook(object):
 
     @property
     def latch(self):
-        return self._transfer._latch
+        return self._transfer.latch
 
     @property
     def origin(self):
