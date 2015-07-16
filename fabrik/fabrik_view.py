@@ -76,50 +76,6 @@ class HookItemAttributes(ViewItemAttributes):
     def label_color(self, value):
         self._label_color = value
 '''
-class HookSpacer(SpacerContainer.SpacerContainer.Spacer):
-    def __init__(self,parent):
-        super(HookSpacer, self).__init__(parent)
-        self._layout_manager = parent.parent
-        self._view = parent.parent.view()
-        self._adapter = parent.parent.adapter()
-        self.dragOver = False
-
-        #Qt Properties
-        self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
-        self.collapseWidth()
-        self.setAcceptDrops(False)
-        
-    @property
-    def bottomBand(self):
-        if self.itemA._altitude < self.itemB._altitude:
-            return self.itemA
-        return self.itemB
-
-    @property
-    def topBand(self):
-        if self.itemA.altitude < self.itemB.altitude:
-            return self.itemB
-        return self.itemA
-
-    @property
-    def latch(self):
-        return self.latch
-
-    def link(self):
-        #TODO
-        l = self.parent.parent.layout()
-        try:
-            l.addAnchor(self, Qt.AnchorBottom, self.bottomBand, Qt.AnchorTop)
-            print "linked"
-        except:
-            print "Nope: "+str(self.bottomBand.index)
-        l.addAnchor(self, Qt.AnchorTop, self.topBand, Qt.AnchorBottom)
-        l.addAnchor(self, Qt.AnchorLeft, self.latch, Qt.AnchorLeft)
-        l.addAnchor(self, Qt.AnchorRight, self.latch, Qt.AnchorRight)
-
-    def paint(self, painter, option, widget):
-        painter.setPen(Qt.NoPen)
-        painter.drawRect(self.rect())
 
 class HookItem(QGraphicsWidget,HookItemAttributes):
     def __init__(self, parent, hook_label):
@@ -182,16 +138,12 @@ class HookItem(QGraphicsWidget,HookItemAttributes):
 
     def link(self):
         #TODO
-        l = self._layout_manager
-        print dir(self)
-        try:
-            l.addAnchor(self, Qt.AnchorBottom, self.bottomBand, Qt.AnchorTop)
-            print "linked Item"
-        except:
-            print "Nope: Item: ", self.bottomBand().altitude
+        print "Actually linking!", self._hook_label, self.bottomBand().altitude, self.topBand.altitude
+        l = self._layout_manager.layout()
+        l.addAnchor(self, Qt.AnchorBottom, self.bottomBand(), Qt.AnchorTop)
         l.addAnchor(self, Qt.AnchorTop, self.topBand, Qt.AnchorBottom)
         l.addAnchor(self, Qt.AnchorLeft, self.latch, Qt.AnchorLeft)
-        
+        l.addAnchor(self, Qt.AnchorRight, self.latch, Qt.AnchorRight)
         return
 
     def mousePressEvent(self, event):
@@ -218,12 +170,12 @@ class HookItem(QGraphicsWidget,HookItemAttributes):
         painter.setPen(border_pen)
         rect = self.geometry()
         #Label
-        painter.setPen(self.label_color)
-        painter.rotate(-90)
-        fm = painter.fontMetrics()
-        elided = fm.elidedText(self.label, Qt.ElideRight, rect.height())
-        twidth = fm.width(elided)
-        painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
+#        painter.setPen(self.label_color)
+#        painter.rotate(-90)
+#        fm = painter.fontMetrics()
+#        elided = fm.elidedText(self.label, Qt.ElideRight, rect.height())
+#        twidth = fm.width(elided)
+#        painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
 
 '''
 class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
