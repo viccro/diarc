@@ -180,15 +180,43 @@ class FabrikAdapter(BaseAdapter):
             elif not isUsed and self._view.has_snap_item(snapkey):
                 self._view.remove_snap_item(snapkey)
                 self._cached_snap_item_snapkeys.remove(snapkey)
-        
-        # Add new BlockItems for blocks in model that are not in view
-        for hooklabel in hooks:
-            self._view.add_hook_item(hooklabel)
-            self._cached_hook_item_labels.append(hooklabel)
+       
+        # Delete outdated SnapItems still in the view but no longer in the topology
+        old_hook_item_labels = list(set(self._cached_hook_item_labels) - set(hooks.keys()))
+        for hooklabel in old_hook_item_labels:
+            self._view.remove_hook_item(hooklabel)
+            self._cached_hook_item_labels.remove(hooklabel)
 
+        # Delete HookItems that exist, but are not being used, and add HookItems
+        # that are being used, but are not yet in the view
+        for hooklabel in hooks:
+            print hooklabel
+            hook = hooks[hooklabel]
+            isUsed = hook.isUsed()
+            if isUsed and not self._view.has_hook_item(hooklabel):
+                self._view.add_hook_item(hooklabel)
+                self._cached_hook_item_labels.append(hooklabel)
+            elif not isUsed and self._view.has_hook_item(hooklabel):
+                self._view.remove_hook_item(hooklabel)
+                self._cached_hook_item_labels.remove(hooklabel)
+
+        # Delete outdated FlowItems still in teh view but no longer in teh topology
+        old_flow_item_labels = list(set(self._cached_flow_item_labels) - set(flows.keys()))
+        for flowlabel in old_flow_item_labels:
+            self._view.remove_flow_item(flowlabel)
+            self._cached_flow_item_labels.remove(flowlabel)
+
+        # Delete FlowItems that exist, but are not being used, and add FlowItems
+        # that are being used, but are not yet in the view
         for flowlabel in flows:
-            self._view.add_flow_item(flowlabel)
-            self._cached_flow_item_labels.append(flowlabel)
+            flow = flows[flowlabel]
+            isUsed = flow.isUsed()
+            if isUsed and not self._view.has_flow_item(flowlabel):
+                self._view.add_flow_item(flowlabel)
+                self._cached_flow_item_labels.append(flowlabel)
+            elif not isUsed and self._view.has_flow_item(flowlabel):
+                self._view.remove_flow_item(flowlabel)
+                self._cached_flow_item_labels.remove(flowlabel)
 
         # Update the SnapItem cache list
 #         self._cached_snap_item_snapkeys = snaps.keys()
@@ -230,8 +258,10 @@ class FabrikAdapter(BaseAdapter):
             bot_alt = band.bottomBand.altitude if band.bottomBand else None
             emitters = band.emitters
             collectors = band.collectors
+            #TODO hooks = band.hooks
             emitters.sort(lambda x,y: x.block.index - y.block.index)
             collectors.sort(lambda x,y: x.block.index - y.block.index)
+            
             left_snap = None
             right_snap = None
             # Skip bands that don't have an item 

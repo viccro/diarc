@@ -147,7 +147,16 @@ class Latch(Node):
         self.name = name
         log.debug( "Adding Latch " + str(name))
 
-class Exchange(Edge):
+class FabrikEdge(Edge):
+    def __init__(self, topology):
+        super(FabrikEdge, self).__init__(topology)
+
+    @property
+    def transfers(self):
+        """ returns list of all source connections to this edge """
+        return filter(lambda x: x.edge == self, self._topology._transfers)
+
+class Exchange(FabrikEdge):
     def __init__(self,fg,name=None):
         typecheck(fg,FabrikGraph,"fg")
         super(Exchange,self).__init__(fg)
@@ -179,7 +188,6 @@ class Exchange(Edge):
         return self.sinks
 
 
-
 class FabrikBand(Band):
     def __init__(self, edge, isPositive):
         super(FabrikBand, self).__init__(edge, isPositive)
@@ -187,6 +195,25 @@ class FabrikBand(Band):
     def isUsed(self):
         return True
 
+    @property
+    def hooks(self):
+        """returns a list of hooks that reach this band"""
+        # We compare the position of each source against the position of the furthest
+        # away sink (depending on pos/neg altitude).
+        hookLatchIndices = [s.block.index for t in self.edge.sinks]
+        hookLatchIndices = filter(lambda x: isinstance(x,int), sinkBlockIndices)
+        if len(sinkBlockIndices) < 1:
+            return list()
+        sources = list()
+        # Find Sources if this is a  Positive Bands
+        if self._altitude and self._altitude > 0:
+            maxSinkIndex = max(sinkBlockIndices)
+            sources = filter(lambda src: src.block.index < maxSinkIndex, self.edge.sources)
+            # Find Sources if this is a  Negative Bands
+        elif self._altitude and self._altitude < 0:
+            minSinkIndex = min(sinkBlockIndices)
+            sources = filter(lambda src: src.block.index >= minSinkIndex, self.edge.sources)
+        return [s.snap for s in sources]
 
 class Producer(Source):
     def __init__(self,fg,node,exchange,routingKeys = None):
@@ -322,6 +349,14 @@ class Hook(object):
     def dest(self):
         return self._transfer._dest
 
+    def isUsed(self):
+        return True if self._transfer else False
+
+    def _release(self):
+        logging.debug("releasing hook %r"%self)
+        logging.debug("... removing reference to transfer.")
+        self._transfer = None
+
 class Flow(object):
     """Visual representation of a feed"""
     def __init__(self, feed, routing_keys = None):
@@ -339,4 +374,12 @@ class Flow(object):
     @property
     def dest(self):
         return self._feed.dest
+
+    def isUsed(self):
+        return True if self._feed else False
+
+    def _release(self):
+        logging.debug("releasing flow %r"%self)
+        logging.debug("... removing reference to feed.")
+        self._feed = None
 

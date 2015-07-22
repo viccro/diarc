@@ -69,13 +69,11 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         return self._layout_manager.get_block_item(self.latchIndex)
 
     def release(self):
-        self.itemA = None
-        self.itemB = None
         self.origin_band_item = None
-        self.origin_dest_item = None
+        self.dest_band_item = None
         self.setVisible(False)
         self.setParent(None)
-        super(HookItem, self)._release()
+#        super(HookItem, self).release()
 
     def set_attributes(self, attrs):
         self.setVisible(True)
@@ -182,15 +180,19 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
 
     @property
     def itemA(self):
-        return self.origin_node_item
+        return self.origin
 
     @property
     def itemB(self):
-        return self.dest_node_item
+        return self.dest
 
     def release(self):
-        #TODO
-        return
+        self._flow_label = None
+        self.origin_node_item = None
+        self.dest_node_item = None
+        self.setVisible(False)
+        self.setParent(None)
+        super(FlowItem, self)._release()
 
     def set_attributes(self, attrs):
         self.setVisible(True)
