@@ -2,6 +2,7 @@ from qt_view import qt_view
 from qt_view import SpacerContainer
 import logging
 import hooklabel
+import flowlabel
 from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene, QGraphicsAnchorLayout
 from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon
 from python_qt_binding.QtCore import Qt, QPoint
@@ -12,38 +13,6 @@ from diarc.view import View, ViewItemAttributes
 from diarc.util import TypedDict, typecheck
 
 log = logging.getLogger('fabrik.fabrik_view')
-
-class FlowItemAttributes(ViewItemAttributes):
-    def __init__(self):
-        super(FlowItemAttributes, self).__init__()
-        self._bgcolor = "black"
-        self._border_color = "black"
-        self._label_color = "white"
-
-    @property
-    def bgcolor(self):
-        return QColor(self._bgcolor)
-
-    @bgcolor.setter
-    def bgcolor(self, value):
-        self._bgcolor = value
-
-    @property
-    def border_color(self):
-        return QColor(self._border_color)
-        
-    @border_color.setter
-    def border_color(self, value):
-        self._border_color = value
-            
-    @property
-    def label_color(self):
-        return QColor(self._label_color)
-
-    @label_color.setter
-    def label_color(self, value):
-        self._label_color = value
-
 
 class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
     def __init__(self, parent, hook_label):
@@ -64,7 +33,6 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
 
         #Qt Properties
         self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
-#        self.set_width(20)
         self.setPreferredHeight(20)
         self.setMinimumHeight(20)
 
@@ -75,8 +43,6 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
     @property
     def itemB(self):
         return self.dest_band_item
-
-    
     
     def bottomBand(self):
         if self.itemA.altitude < self.itemB.altitude:
@@ -114,7 +80,6 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         self.setVisible(True)
         self.update(self.rect())
         self.copy_attributes(attrs)
-        return
 
     def link(self):
         l = self._layout_manager.layout()
@@ -126,7 +91,6 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         self.bgcolor = self.itemA.bgcolor
         self.border_color = self.itemA.border_color
         self.label_color = self.itemA.label_color
-        return
 
     def paint(self, painter, option, widget):
         #Paint background
@@ -179,23 +143,69 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
 
-class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
+class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
     def __init__(self, parent, flow_label):
-        FlowItemAttributes.__init__(self)
-        #parse_hook_label(hook_label)
+        super(FlowItem, self).__init__(parent)
+        qt_view.BandItemAttributes.__init__(self)
         self._flow_label = flow_label
         self._layout_manager = typecheck(parent, FabrikLayoutManagerWidget, "parent")
         self._view = parent.view()
         self._adapter = parent.adapter()
 
+        self.origin_index, self.dest_index = flowlabel.parse_flowlabel(flow_label)
+    
+        self.origin_node_item = self._layout_manager.get_block_item(self.origin_index)
+        self.dest_node_item = self._layout_manager.get_block_item(self.dest_index)
+
+        #Qt Properties
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
+        self.setPreferredHeight(20)
+        self.setMinimumHeight(20)
+
+    @property
+    def origin(self):
+        return self.origin_node_item
+
+    @property
+    def dest(self):
+        return self.dest_node_item
+
+    @property
+    def isMalformed(self):
+        return (self.dest.index < self.origin.index)
+
+    @property
+    def flowlabel(self):
+        return self._flow_label
+
+    @property
+    def itemA(self):
+        return self.origin_node_item
+
+    @property
+    def itemB(self):
+        return self.dest_node_item
+
     def release(self):
+        #TODO
         return
 
     def set_attributes(self, attrs):
-        return
+        self.setVisible(True)
+        self.update(self.rect())
+        self.copy_attributes(attrs)
 
     def link(self):
-        return
+        l = self._layout_manager.layout()
+#        self.setZValue(self.origin_band_item.rank+0.5)
+        l.addAnchor(self, Qt.AnchorBottom, self.origin, Qt.AnchorBottom)
+        l.addAnchor(self, Qt.AnchorTop, self.origin, Qt.AnchorTop)
+        #TODO 
+        #l.addAnchor(self, Qt.AnchorLeft, self.origin, Qt.AnchorRight)
+        #l.addAnchor(self, Qt.AnchorRight, self.dest, Qt.AnchorLeft)
+        self.bgcolor = self.itemA.bgcolor
+        self.border_color = self.itemA.border_color
+        self.label_color = self.itemA.label_color
 
     def paint(self, painter, option, widget):
         #Paint background
@@ -220,12 +230,6 @@ class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
         brush.setColor(self.label_color)
         painter.setPen(Qt.NoPen)
         painter.setBrush(brush)
-
-    def itemA(self):
-        pass #TODO
-
-    def itemB(self):
-        pass #TODO
 
 class FabrikView(QGraphicsView, View):
     """ This is a Qt based stand-alone widget that provides a visual rendering 
@@ -262,7 +266,7 @@ class FabrikView(QGraphicsView, View):
     __add_flow_item_signal = Signal(str)
     __remove_flow_item_signal = Signal(str)
     __set_flow_item_settings_signal = Signal(str)
-    __set_flow_item_attributes_signal = Signal(str, FlowItemAttributes)
+    __set_flow_item_attributes_signal = Signal(str, qt_view.BandItemAttributes)
     
     def __init__(self):
         super(FabrikView, self).__init__(None)
@@ -435,7 +439,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def __init__(self, view):
         super(FabrikLayoutManagerWidget, self).__init__(view)
         self._hook_items = TypedDict(str,HookItem)    # altitude    #TypedList(BandItem)
-       # self._flow_items = TypedDict(str,FlowItem)  # snapkey  #TypedList(SnapItem)
+        self._flow_items = TypedDict(str,FlowItem)  # snapkey  #TypedList(SnapItem)
         log.debug("Initialized Fabrik Layout Manager")
 
     def add_block_item(self, index):
@@ -486,7 +490,6 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
         log.debug("... Removing HookItem %s"%hook_label)
-        print self._hook_items
         self._hook_items[hook_label].release() #TODO
         self._hook_items.pop(hook_label) 
 
@@ -575,6 +578,10 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
 
         # Link Hook Items
         for item in self._hook_items.values():
+            item.link()
+
+        # Link Flow Items
+        for item in self._flow_items.values():
             item.link()
 
         log.debug("*** Finished Linking ***\n")

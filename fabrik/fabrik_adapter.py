@@ -38,6 +38,7 @@ class FabrikAdapter(BaseAdapter):
         self._cached_band_item_altitudes = list()
         self._cached_snap_item_snapkeys = list()
         self._cached_hook_item_labels = list()
+        self._cached_flow_item_labels = list()
 
         self._color_mapper = ColorMapper()
 
@@ -105,6 +106,15 @@ class FabrikAdapter(BaseAdapter):
         attrs.label = str(hook._routing_keys)
         return attrs
 
+    def get_flow_item_attributes(self, flowlabel):
+        """Default method for providing some stock settings for flows"""
+        flow = self._topology.flows[flowlabel]
+        attrs = BandItemAttributes()
+        attrs.bgcolor = "black"
+        attrs.border_color = "green"
+        attrs.label = str(flow._routing_keys)
+        return attrs
+
     def _update_view(self):
         """ updates the view - compute each items neigbors and then calls linking. """
 
@@ -113,6 +123,7 @@ class FabrikAdapter(BaseAdapter):
         bands = self._topology.bands
         snaps = self._topology.snaps
         hooks = self._topology.hooks
+        flows = self._topology.flows
 
         # Delete outdated BlockItems still in the view but no longer in the topology
         old_block_item_indexes = list(set(self._cached_block_item_indexes) - set(blocks.keys()))
@@ -175,7 +186,9 @@ class FabrikAdapter(BaseAdapter):
             self._view.add_hook_item(hooklabel)
             self._cached_hook_item_labels.append(hooklabel)
 
-
+        for flowlabel in flows:
+            self._view.add_flow_item(flowlabel)
+            self._cached_flow_item_labels.append(flowlabel)
 
         # Update the SnapItem cache list
 #         self._cached_snap_item_snapkeys = snaps.keys()
@@ -236,6 +249,7 @@ class FabrikAdapter(BaseAdapter):
             self._view.set_band_item_settings(altitude, band.rank, top_alt, bot_alt, left_snapkey, right_snapkey )
 
         #Don't need hook neighbor information, because they're 1:1 with latch-blocks
+        #Flow information will be linked in with block sorting
 
         log.debug("*** Finished Computing neighbors ***")
         log.debug("*** Assigning Attributes ***")
@@ -259,6 +273,10 @@ class FabrikAdapter(BaseAdapter):
         for hooklabel in hooks:
             attributes = self.get_hook_item_attributes(hooklabel)
             self._view.set_hook_item_attributes(hooklabel, attributes)
+
+        for flowlabel in flows:
+            attributes = self.get_flow_item_attributes(flowlabel)
+            self._view.set_flow_item_attributes(flowlabel, attributes)
 
         log.debug("*** Finished Assigning Attributes ***")
         self._view.update_view()

@@ -35,6 +35,7 @@
 from diarc.topology import *
 import logging
 import hooklabel
+import flowlabel
 
 log = logging.getLogger('fabrik.fabrik_parser')
 
@@ -68,6 +69,10 @@ class FabrikGraph(Topology):
     @property
     def feeds(self):
         return self._feeds
+
+    @property
+    def flows(self):
+        return dict([(f.flow.flowlabel(), f.flow) for f in self.feeds])
 
     def nextFreeNodeIndex(self):
         """ returns the next available node index """
@@ -140,7 +145,7 @@ class Latch(Node):
         super(Latch,self).__init__(fg)
         self.nodeType = "latch"
         self.name = name
-        log.debug( "Adding Latch" + str(name))
+        log.debug( "Adding Latch " + str(name))
 
 class Exchange(Edge):
     def __init__(self,fg,name=None):
@@ -194,7 +199,7 @@ class Producer(Source):
 
         self.bandwidth = None
         self.routingKeys = routingKeys
-        log.debug("Adding Producer: " + str(node.name)+" to "+str(exchange.name))
+        log.debug("Adding Producer: " + str(node.name)+" to "+str(exchange.name)+" with routing-keys "+str(routingKeys))
 
     @property
     def exchange(self):
@@ -218,7 +223,7 @@ class Consumer(Sink):
 
         self.bandwidth = None
         self.routingKeys = routingKeys
-        log.debug("Adding Consumer: " + str(exchange.name)+" to "+str(node.name))
+        log.debug("Adding Consumer: " + str(exchange.name)+" to "+str(node.name)+" with routing-keys "+str(routingKeys))
 
     @property
     def topic(self):
@@ -334,3 +339,4 @@ class Flow(object):
     @property
     def dest(self):
         return self._feed.dest
+

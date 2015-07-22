@@ -31,6 +31,6 @@ def parse_flowlabel(flowlabel):
         raise Exception("Invalid flowlabel %s"%flowlabel)
     return (int(m[0][0]), int(m[0][2]))
 
-def gen_hooklabel(origin_index,  destination_index):
+def gen_flowlabel(origin_index,  destination_index):
     """ generate a flowlabel """
     return "%d_%d"%(origin_index, destination_index)
