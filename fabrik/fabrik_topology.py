@@ -105,6 +105,10 @@ class Node(Vertex):
     def consumers(self):
         return self.sinks
 
+    @property
+    def feeds(self):
+        """Returns an unordered list of outgoing feeds from this node"""
+        return filter(lambda x: x.origin == self, self._topology._feeds)
 
 class Queue(Node):
     def __init__(self,fg,name=None):
@@ -229,10 +233,15 @@ class Consumer(Sink):
 class Feed(object):
     """An object that represents messages flowing from a node to another node;
     Seen, for example, from a queue to a serivce buddy"""
-    def __init__(self, fg, node_origin, node_dest):
+    def __init__(self, fg, node_origin, node_dest, routingKeys = None):
         self._topology = typecheck(fg, FabrikGraph, "fg")
         self._origin = typecheck(node_origin, Node, "origin")
         self._dest = typecheck(node_dest, Node, "dest")
+        self._flow = Flow(self, routingKeys)
+        self._routingKeys = routingKeys
+        for feed in node_origin.feeds + node_dest.feeds:
+            if (node_origin == feed.origin) and (node_dest == feed.dest) and (routingKeys == feed.routingKeys):
+                raise Exception("Duplicate node feed! "+node_origin.name+"->"+node_dest.name+", routing-keys: "+str(routingKeys))
         self._topology._feeds.append(self)
 
     @property
@@ -243,13 +252,22 @@ class Feed(object):
     def dest(self):
         return self._dest
 
+    @property
+    def flow(self):
+        return self._flow
+
+    @property
+    def routingKeys(self):
+        return self._routingKeys
+
 class Transfer(object):
     """An object that represents messages flowing from one exchange to another"""
     def __init__(self, fg, exchange_origin, exchange_dest, routingKeys = None):
         self._topology = typecheck(fg, FabrikGraph, "fg")
         self._origin = typecheck(exchange_origin, Exchange, "origin")
         self._dest = typecheck(exchange_dest, Exchange, "dest")
-        self._hook = Hook(self)
+        self._hook = Hook(self,routingKeys)
+        self._hook_label = self._hook.hooklabel
         self._routingKeys = routingKeys
         for transfer in exchange_origin.transfers + exchange_dest.transfers:
             if (exchange_origin == transfer.origin) and (exchange_dest == transfer.dest) and (routingKeys == transfer.routingKeys):
@@ -279,22 +297,13 @@ class Transfer(object):
 
 class Hook(object):
     """Visual representation of a transfer"""
-    def __init__(self, transfer):
+    def __init__(self, transfer, routing_keys = None):
         self._transfer = typecheck(transfer, Transfer, "transfer")
         self._order = None    
+        self._routing_keys = routing_keys
     
     def hooklabel(self):
         return hooklabel.gen_hooklabel(self.origin.posBand.altitude, self.dest.posBand.altitude, self.latch.block.index)
-
-    def posBandLink(self):
-#TODO something
-        pBand = self._transfer.origin.posBand
-        return pBand
-
-    def negBandLink(self):
-#TODO something
-        nBand = self._transfer.origin.negBand
-        return nBand
 
     @property
     def latch(self):
@@ -308,10 +317,20 @@ class Hook(object):
     def dest(self):
         return self._transfer._dest
 
+class Flow(object):
+    """Visual representation of a feed"""
+    def __init__(self, feed, routing_keys = None):
+        self._feed = typecheck(feed, Feed, "feed")
+        self._order = None
+        self._routing_keys = routing_keys
+
+    def flowlabel(self):
+        return flowlabel.gen_flowlabel(self.origin.block.index, self.dest.block.index)
+
     @property
-    def bandLinks(self):
-        return filter(lambda x: isinstance(x,Band), [self.posBandLink, self.negBandLink])
+    def origin(self):
+        return self._feed.origin
 
-    #TODO leftHook rightHook?
-
-#class Flow(
+    @property
+    def dest(self):
+        return self._feed.dest

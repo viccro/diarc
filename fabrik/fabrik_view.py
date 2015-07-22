@@ -3,8 +3,8 @@ from qt_view import SpacerContainer
 import logging
 import hooklabel
 from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene, QGraphicsAnchorLayout
-from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget
-from python_qt_binding.QtCore import Qt
+from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon
+from python_qt_binding.QtCore import Qt, QPoint
 from python_qt_binding.QtCore import pyqtSignal as Signal
 import python_qt_binding.QtGui
 import sys
@@ -13,45 +13,12 @@ from diarc.util import TypedDict, typecheck
 
 log = logging.getLogger('fabrik.fabrik_view')
 
-class HookItemAttributes(ViewItemAttributes):
-    def __init__(self):
-        super(HookItemAttributes, self).__init__()
-        self._bgcolor = "red"
-        self._border_color = "red"
-        self._label_color = "#000000"
-        print "ATTRIBUTES"
-
-    @property
-    def bgcolor(self):
-        return QColor(self._bgcolor)
-
-    @bgcolor.setter
-    def bgcolor(self, value):
-        self._bgcolor = value
-
-    @property
-    def border_color(self):
-        return QColor(self._border_color)
-        
-    @border_color.setter
-    def border_color(self, value):
-        self._border_color = value
-            
-    @property
-    def label_color(self):
-        return QColor(self._label_color)
-
-    @label_color.setter
-    def label_color(self, value):
-        self._label_color = value
-
-
-'''class FlowItemAttributes(ViewItemAttributes):
+class FlowItemAttributes(ViewItemAttributes):
     def __init__(self):
         super(FlowItemAttributes, self).__init__()
-        self._bgcolor = "#ffffff"
-        self._border_color = "#000000"
-        self._label_color = "#000000"
+        self._bgcolor = "black"
+        self._border_color = "black"
+        self._label_color = "white"
 
     @property
     def bgcolor(self):
@@ -76,18 +43,16 @@ class HookItemAttributes(ViewItemAttributes):
     @label_color.setter
     def label_color(self, value):
         self._label_color = value
-'''
 
-class HookItem(QGraphicsWidget,HookItemAttributes):
+
+class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
     def __init__(self, parent, hook_label):
         super(HookItem, self).__init__(parent)
-        HookItemAttributes.__init__(self)
+        qt_view.BandItemAttributes.__init__(self)
         self._hook_label = hook_label
         self._layout_manager = typecheck(parent, FabrikLayoutManagerWidget, "parent")
         self._view = parent.view()
         self._adapter = parent.adapter()
-#        print parent.get_hook_item(hook_label)
-
         self.originAltitude, self.destAltitude, self.latchIndex = hooklabel.parse_hooklabel(self._hook_label)
 
         #Deal with the parsed things.
@@ -95,8 +60,7 @@ class HookItem(QGraphicsWidget,HookItemAttributes):
         self.dest_band_item = self._layout_manager.get_band_item(self.destAltitude)
         self._container = self.latch
 
-        #Locational specifications: info about the latch, snap items to the left/right, etc
-        #pbands, nbands
+        self.rank = self.origin_band_item.rank
 
         #Qt Properties
         self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
@@ -113,11 +77,19 @@ class HookItem(QGraphicsWidget,HookItemAttributes):
         return self.dest_band_item
 
     
+    
     def bottomBand(self):
-#        print "Bottom Band"
         if self.itemA.altitude < self.itemB.altitude:
             return self.itemA
         return self.itemB
+
+    @property
+    def rank(self):
+         return self._rank
+    @rank.setter
+    def rank(self, value):
+        self._rank = value
+        self.setZValue(self._rank)
 
     @property
     def topBand(self):
@@ -130,32 +102,31 @@ class HookItem(QGraphicsWidget,HookItemAttributes):
         return self._layout_manager.get_block_item(self.latchIndex)
 
     def release(self):
+        self.itemA = None
+        self.itemB = None
+        self.origin_band_item = None
+        self.origin_dest_item = None
         self.setVisible(False)
+        self.setParent(None)
+        super(HookItem, self)._release()
 
     def set_attributes(self, attrs):
         self.setVisible(True)
         self.update(self.rect())
+        self.copy_attributes(attrs)
         return
 
     def link(self):
-        #TODO
-        print "Actually linking!", self._hook_label, self.bottomBand().altitude, self.topBand.altitude
         l = self._layout_manager.layout()
+        self.setZValue(self.origin_band_item.rank+0.5)
         l.addAnchor(self, Qt.AnchorBottom, self.bottomBand(), Qt.AnchorTop)
         l.addAnchor(self, Qt.AnchorTop, self.topBand, Qt.AnchorBottom)
         l.addAnchor(self, Qt.AnchorLeft, self.latch, Qt.AnchorLeft)
         l.addAnchor(self, Qt.AnchorRight, self.latch, Qt.AnchorRight)
+        self.bgcolor = self.itemA.bgcolor
+        self.border_color = self.itemA.border_color
+        self.label_color = self.itemA.label_color
         return
-
-    def mousePressEvent(self, event):
-        """ Captures the mouse press event for dragging """
-        pass
-
-    def mouseReleaseEvent(self, event):
-        pass #TODO
-
-    def mouseMoveEvent(self, event):
-        pass #TODO
 
     def paint(self, painter, option, widget):
         #Paint background
@@ -169,34 +140,53 @@ class HookItem(QGraphicsWidget,HookItemAttributes):
         border_pen.setStyle(Qt.SolidLine)
         border_pen.setWidth(self.border_width)
         painter.setPen(border_pen)
+        painter.drawRect(self.rect())
         rect = self.geometry()
-        #Label
-#        painter.setPen(self.label_color)
-#        painter.rotate(-90)
-#        fm = painter.fontMetrics()
-#        elided = fm.elidedText(self.label, Qt.ElideRight, rect.height())
-#        twidth = fm.width(elided)
-#        painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
+        # Create arrows
+        arrow_scale = 0.25
+        arrow_width = rect.width()*arrow_scale
+        arrow_height = arrow_width * 0.8
+        arrow_margin = (rect.width()-arrow_width)/2.0
 
-'''
+        brush.setColor(self.label_color)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(brush)
+        arrow = None 
+
+        if (self.topBand == self.dest_band_item):
+            # Draw pointing up
+            arrow = QPolygon([QPoint(0,arrow_height), QPoint(arrow_width,arrow_height), QPoint(arrow_width/2.0,0)])
+            arrow.translate(rect.x(),rect.y())
+        else:
+            # Draw pointing down
+            arrow = QPolygon([QPoint(0,0), QPoint(arrow_width,0), QPoint(arrow_width/2.0,arrow_height)])
+            arrow.translate(rect.x(),rect.y())
+            #arrow.translate(rect.x()+arrow_margin,rect.y()+rect.height()-arrow_height-arrow_margin)
+        painter.drawPolygon(arrow)
+
+        #Label
+        painter.setPen(self.label_color)
+        painter.rotate(-90)
+        fm = painter.fontMetrics()
+        elided = fm.elidedText(self.label, Qt.ElideRight, rect.height())
+        twidth = fm.width(elided)
+        painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
+
+    def hoverEnterEvent(self, event):
+        QToolTip.showText(event.screenPos(),self.label)
+        #TODO: debug
+
+    def hoverLeaveEvent(self, event):
+        QToolTip.hideText()
+
 class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
     def __init__(self, parent, flow_label):
-        HookItemAttributes.__init__(self)
+        FlowItemAttributes.__init__(self)
         #parse_hook_label(hook_label)
         self._flow_label = flow_label
         self._layout_manager = typecheck(parent, FabrikLayoutManagerWidget, "parent")
         self._view = parent.view()
         self._adapter = parent.adapter()
-
-        #Deal with the parsed things.
-        #self.origin_node = 
-        #self.dest_node = 
-
-        #Locational specifications: info about the spacer items to the left/right, etc
-
-        #Qt Properties
-        
-        #Create a linkage
 
     def release(self):
         return
@@ -207,18 +197,7 @@ class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
     def link(self):
         return
 
-    def mousePressEvent(self, event):
-        """ Captures the mouse press event for dragging """
-        pass
-
-    def mouseReleaseEvent(self, event):
-        pass #TODO
-
-    def mouseMoveEvent(self, event):
-        pass #TODO
-
     def paint(self, painter, option, widget):
-        return
         #Paint background
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
@@ -230,21 +209,24 @@ class FlowItem(SpacerContainer.SpacerContainer.Item, FlowItemAttributes):
         border_pen.setStyle(Qt.SolidLine)
         border_pen.setWidth(self.border_width)
         painter.setPen(border_pen)
+        painter.drawRect(self.rect())
         rect = self.geometry()
-        #Label
-        painter.setPen(self.label_color)
-        painter.rotate(-90)
-        fm = painter.fontMetrics()
-        elided = fm.elidedText(self.label, Qt.ElideRight, rect.height())
-        twidth = fm.width(elided)
-        painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
+        # Create arrows
+        arrow_scale = 0.25
+        arrow_width = rect.width()*arrow_scale
+        arrow_height = arrow_width * 0.8
+        arrow_margin = (rect.width()-arrow_width)/2.0
+
+        brush.setColor(self.label_color)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(brush)
 
     def itemA(self):
         pass #TODO
 
     def itemB(self):
         pass #TODO
-'''
+
 class FabrikView(QGraphicsView, View):
     """ This is a Qt based stand-alone widget that provides a visual rendering 
     of a Topology. It provides a window into a self contained GraphicsScene in
@@ -275,13 +257,13 @@ class FabrikView(QGraphicsView, View):
     __add_hook_item_signal = Signal(str)
     __remove_hook_item_signal = Signal(str)
     __set_hook_item_settings_signal = Signal(str)
-    __set_hook_item_attributes_signal = Signal(str, HookItemAttributes)
-    '''
+    __set_hook_item_attributes_signal = Signal(str, qt_view.BandItemAttributes)
+    
     __add_flow_item_signal = Signal(str)
     __remove_flow_item_signal = Signal(str)
     __set_flow_item_settings_signal = Signal(str)
     __set_flow_item_attributes_signal = Signal(str, FlowItemAttributes)
-    '''
+    
     def __init__(self):
         super(FabrikView, self).__init__(None)
         View.__init__(self)
@@ -319,12 +301,12 @@ class FabrikView(QGraphicsView, View):
         self.__remove_hook_item_signal.connect(self.layout_manager.remove_hook_item)
         self.__set_hook_item_settings_signal.connect(self.layout_manager.set_hook_item_settings)
         self.__set_hook_item_attributes_signal.connect(self.layout_manager.set_hook_item_attributes)
-        '''
+        
         self.__add_flow_item_signal.connect(self.layout_manager.add_flow_item)
         self.__remove_flow_item_signal.connect(self.layout_manager.remove_flow_item)
         self.__set_flow_item_settings_signal.connect(self.layout_manager.set_flow_item_settings)
         self.__set_flow_item_attributes_signal.connect(self.layout_manager.set_flow_item_attributes)
-        '''
+        
         self.resize(1024,768)
         self.show()
 
@@ -394,7 +376,7 @@ class FabrikView(QGraphicsView, View):
 
     def set_hook_item_attributes(self, hook_label, attributes):
         self.__set_hook_item_attributes_signal.emit(hook_label, attributes)
-    '''
+    
     def add_flow_item(self, flow_label):
         self.__add_flow_item_signal.emit(flow_label)
 
@@ -409,7 +391,7 @@ class FabrikView(QGraphicsView, View):
 
     def set_flow_item_attributes(self, flow_label, attributes):
         self.__set_flow_item_attributes_signal.emit(flow_label, attributes)
-    '''
+    
     def wheelEvent(self,event):
         """ Implements scrollwheel zooming """
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
@@ -504,6 +486,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
         log.debug("... Removing HookItem %s"%hook_label)
+        print self._hook_items
         self._hook_items[hook_label].release() #TODO
         self._hook_items.pop(hook_label) 
 
@@ -525,7 +508,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
         return self._hook_items[hook_label]
-    '''
+    
     def add_flow_item(self, flow_label):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
         flow_label = str(flow_label)
@@ -561,7 +544,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
         flow_label = str(flow_label)
         return self._flow_items[flow_label]
-    '''
+    
 
     def link(self):
         log.debug("*** Begining Linking ***")

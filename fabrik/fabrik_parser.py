@@ -112,14 +112,14 @@ def add_transfer(fabrik, publishing_exchange, exchange, routingKeys):
             return
 
     interExchTransfer = Transfer(fabrik, publishing_exchange, exchange, routingKeys)
-    log.debug("Adding Transfer from "+interExchTransfer.origin.name+" to "+interExchTransfer.dest.name)
+    log.debug("Adding Transfer from "+interExchTransfer.origin.name+" to "+interExchTransfer.dest.name+" with routing-keys"+str(routingKeys))
 
-def add_feed(fabrik, origin_node, dest_node):
+def add_feed(fabrik, origin_node, dest_node, routingKeys=None):
     for f in fabrik.feeds:
         if ((f.origin == origin_node) and (f.dest == dest_node)):
             return
-    node_to_node = Feed(fabrik, origin_node, dest_node)
-    log.debug("Adding Feed from "+node_to_node.origin.name+" to "+node_to_node.dest.name)
+    node_to_node = Feed(fabrik, origin_node, dest_node, routingKeys)
+    log.debug("Adding Feed from "+node_to_node.origin.name+" to "+node_to_node.dest.name +" with routing-keys "+str(routingKeys))
 
 def parse_pub_bindings(fabrik, bindings, publishing_exchange):
     '''Add exchanges and bindings for next steps out (recursively parsing bindings)'''
@@ -142,11 +142,11 @@ def parse_pub_bindings(fabrik, bindings, publishing_exchange):
                 routingKeys = b['routing-key']
             exchange = add_exchange(fabrik,exchangeName)
             add_transfer(fabrik, publishing_exchange, exchange, routingKeys)
-    #TODO: Consumer(fabrik, publishing_exchange, exchange)
 
 def set_sub_features(sub_options, fabrik, filename, sb):
     '''Pulls out necessary features from config options and adds them to the fabrik topology'''
     for opt in sub_options:
+        routingKeys = None
         try:
             subDict = json.loads(opt)
         except:
@@ -158,9 +158,10 @@ def set_sub_features(sub_options, fabrik, filename, sb):
         except:
             queueName = subDict['queue-spec']
         queue = add_queue(fabrik, queueName)
-        add_feed(fabrik, queue, sb)
         if 'bindings' in subDict.keys():
+            routingKeys = subDict['bindings'][0].get(u'routing-keys')
             parse_sub_bindings(fabrik, subDict['bindings'], queue)
+        add_feed(fabrik, queue, sb, routingKeys)
 
 
 def parse_sub_bindings(fabrik, bindings, subscribing_queue):
@@ -175,7 +176,6 @@ def parse_sub_bindings(fabrik, bindings, subscribing_queue):
                 newSubExchangeName = b['bind-tree']['exchange-spec']
             newSubExchange = add_exchange(fabrik, newSubExchangeName)
             parse_sub_bindings(fabrik, newBindings, newSubExchange) 
-        #TODO consumer stuff?
         else: #base-case
             try:
                 exchangeName = b['bind-tree']['exchange-spec']['name']
@@ -190,6 +190,5 @@ def parse_sub_bindings(fabrik, bindings, subscribing_queue):
             Consumer(fabrik, subscribing_queue, exchange, routingKeys) 
 
 mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
-#filename = 'process.ini.j2'
 t = build_topology(mypath)
 

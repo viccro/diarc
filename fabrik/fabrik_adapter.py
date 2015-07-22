@@ -18,7 +18,6 @@ from diarc.view import BandItemAttributes
 from diarc.view import SnapItemAttributes
 from diarc.base_adapter import BaseAdapter
 from fabrik_topology import *
-from fabrik_view import HookItemAttributes
 import sys
 import logging
 import argparse
@@ -100,9 +99,10 @@ class FabrikAdapter(BaseAdapter):
     def get_hook_item_attributes(self, hooklabel):
         """Default method for providing some stock settings for hooks"""
         hook = self._topology.hooks[hooklabel]
-        attrs = HookItemAttributes()
+        attrs = BandItemAttributes()
         attrs.bgcolor = "black"
         attrs.border_color = "green"
+        attrs.label = str(hook._routing_keys)
         return attrs
 
     def _update_view(self):
