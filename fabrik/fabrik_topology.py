@@ -89,10 +89,10 @@ class Node(Vertex):
     def __init__(self,fg):
         typecheck(fg,FabrikGraph,"fg")
         super(Node,self).__init__(fg)
-        
+       
         # dumb placement - just get the next free index
         self.block.index = fg.nextFreeNodeIndex()
-
+            
         self.name = None
         self.location = None
         self.nodeType = None
@@ -194,26 +194,6 @@ class FabrikBand(Band):
 
     def isUsed(self):
         return True
-
-    @property
-    def hooks(self):
-        """returns a list of hooks that reach this band"""
-        # We compare the position of each source against the position of the furthest
-        # away sink (depending on pos/neg altitude).
-        hookLatchIndices = [s.block.index for t in self.edge.sinks]
-        hookLatchIndices = filter(lambda x: isinstance(x,int), sinkBlockIndices)
-        if len(sinkBlockIndices) < 1:
-            return list()
-        sources = list()
-        # Find Sources if this is a  Positive Bands
-        if self._altitude and self._altitude > 0:
-            maxSinkIndex = max(sinkBlockIndices)
-            sources = filter(lambda src: src.block.index < maxSinkIndex, self.edge.sources)
-            # Find Sources if this is a  Negative Bands
-        elif self._altitude and self._altitude < 0:
-            minSinkIndex = min(sinkBlockIndices)
-            sources = filter(lambda src: src.block.index >= minSinkIndex, self.edge.sources)
-        return [s.snap for s in sources]
 
 class Producer(Source):
     def __init__(self,fg,node,exchange,routingKeys = None):

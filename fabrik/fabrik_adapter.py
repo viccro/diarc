@@ -190,7 +190,6 @@ class FabrikAdapter(BaseAdapter):
         # Delete HookItems that exist, but are not being used, and add HookItems
         # that are being used, but are not yet in the view
         for hooklabel in hooks:
-            print hooklabel
             hook = hooks[hooklabel]
             isUsed = hook.isUsed()
             if isUsed and not self._view.has_hook_item(hooklabel):
@@ -304,9 +303,12 @@ class FabrikAdapter(BaseAdapter):
             attributes = self.get_hook_item_attributes(hooklabel)
             self._view.set_hook_item_attributes(hooklabel, attributes)
 
+        # Update flow visual attributes
         for flowlabel in flows:
             attributes = self.get_flow_item_attributes(flowlabel)
             self._view.set_flow_item_attributes(flowlabel, attributes)
+
+        
 
         log.debug("*** Finished Assigning Attributes ***")
         self._view.update_view()

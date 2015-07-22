@@ -192,7 +192,7 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         self.dest_node_item = None
         self.setVisible(False)
         self.setParent(None)
-        super(FlowItem, self)._release()
+#        super(FlowItem, self)._release()
 
     def set_attributes(self, attrs):
         self.setVisible(True)
