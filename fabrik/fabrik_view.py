@@ -4,7 +4,7 @@ import logging
 import hooklabel
 import flowlabel
 from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene, QGraphicsAnchorLayout
-from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon
+from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon, QToolTip
 from python_qt_binding.QtCore import Qt, QPoint
 from python_qt_binding.QtCore import pyqtSignal as Signal
 import python_qt_binding.QtGui
@@ -35,6 +35,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
         self.setPreferredHeight(20)
         self.setMinimumHeight(20)
+        self.setAcceptHoverEvents(True)
 
     @property
     def itemA(self):
@@ -138,7 +139,6 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
 
     def hoverEnterEvent(self, event):
         QToolTip.showText(event.screenPos(),self.label)
-        #TODO: debug
 
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
@@ -158,9 +158,11 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         self.dest_node_item = self._layout_manager.get_block_item(self.dest_index)
 
         #Qt Properties
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
+        self.setContentsMargins(0,10,0,10)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
         self.setPreferredHeight(20)
         self.setMinimumHeight(20)
+        self.setAcceptHoverEvents(True)
 
     @property
     def origin(self):
@@ -230,6 +232,12 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         brush.setColor(self.label_color)
         painter.setPen(Qt.NoPen)
         painter.setBrush(brush)
+
+    def hoverEnterEvent(self, event):
+        QToolTip.showText(event.screenPos(),self.label)
+
+    def hoverLeaveEvent(self, event):
+        QToolTip.hideText()
 
 class FabrikView(QGraphicsView, View):
     """ This is a Qt based stand-alone widget that provides a visual rendering 
