@@ -113,11 +113,11 @@ class FabrikAdapter(BaseAdapter):
         attrs.bgcolor = "black"
         attrs.border_color = "green"
         attrs.label = str(flow._routing_keys)
+        attrs
         return attrs
 
     def move_block(self, originalIdx, destinationIdx):
         blocks = self._topology.blocks
-        print ("*********Moving block %s -> %s"%(str(originalIdx),str(destinationIdx)))
         log.debug("Moving block %s -> %s"%(str(originalIdx),str(destinationIdx)))
         if originalIdx < destinationIdx:
             self.reorder_blocks_no_update(originalIdx, destinationIdx, destinationIdx+1)
@@ -169,52 +169,36 @@ class FabrikAdapter(BaseAdapter):
         blocks = self._topology.blocks
         log.debug("Enforcing Flow Arrangement")
 
-        print "Original configuration: "
-        for index in blocks:
-            print index, " ", blocks[index], blocks[index].isFlowOrigin, blocks[index].isFlowDest
-
         maxBlockIdx = max([x for x in blocks])
         currentIdx = 0
         while currentIdx < maxBlockIdx:
-            print "Inspecting ", blocks[currentIdx]
             offsetIdx = 0
             #is the current block a destination? 
             if not blocks[currentIdx].isFlowDest:
                 #if it's not an origin, keep going.
                 if not blocks[currentIdx].isFlowOrigin:
-                    print "\tNot an origin or a destination. Ignore it!"
                     pass
                 #If it *is* an origin, what is its destination?
                 else:
-                    print "\tIt's an origin!"
                     destIdx = map(lambda x: x.dest.block.index, blocks[currentIdx].flowsGoingOut)
                     if len(destIdx) > 1:
-                        pass #TODO
+                        pass
+                        #TODO
                     else:
                         destBlock = blocks[destIdx[0]]
-                        print "\t\tThe flow from ", blocks[currentIdx], " goes to ", destBlock
                         flowsGoingInToDestBlock = destBlock.flowsComingIn
                         originsOfFlowsGoingInToDestBlock = map(lambda f: f.origin.block, flowsGoingInToDestBlock)
                         for o in originsOfFlowsGoingInToDestBlock:
-                            print "\t\tOther origins to ", destBlock, " include ", o
                             #Don't move the one we're sitting on (or ones we've already processed)!
                             if o.index > (currentIdx+offsetIdx):
                                 #Move each origin of the flows going into the dest block in front of it...
                                 offsetIdx += 1
-                                #TODO may need to check that thigns haven't moved...
-                                b = blocks[o.index]
-                                print ("\t\tGrabbing origins: %s origin:%s, dest:%s"%(b, b.isFlowOrigin, b.isFlowDest))
                                 self.move_block(o.index, currentIdx+offsetIdx)
                         #Double check that your dest block hasn't moved:
                         offsetIdx += 1
-                        b = blocks[destBlock.index]
-                        print ("\t\tSettling dest block: %s origin:%s, dest:%s"%(b, b.isFlowOrigin, b.isFlowDest))
                         self.move_block(destBlock.index, currentIdx+offsetIdx)
             #If it *is* a destination, shunt it to the end and keep going.
             else:
-                print "\tIt's a destination!"
-                b = blocks[currentIdx]
-                print ("\t\tShunting block to end: %s origin:%s, dest:%s"%(b, b.isFlowOrigin, b.isFlowDest))
                 self.move_block(currentIdx, maxBlockIdx)
                 currentIdx -= 1
             #Refresh current block indices
@@ -222,9 +206,6 @@ class FabrikAdapter(BaseAdapter):
             currentIdx += (offsetIdx + 1)
         log.debug("Finished Enforcing Flow Arrangement")
         blocks = self._topology.blocks
-        print "Final configuration: "
-        for index in blocks:
-            print index, " ", blocks[index], blocks[index].isFlowOrigin, blocks[index].isFlowDest
 
     def reorder_blocks(self,srcIdx,lowerIdx,upperIdx):
         if self.reorder_blocks_no_update(srcIdx, lowerIdx, upperIdx):

@@ -156,7 +156,7 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         self.dest_node_item = self._layout_manager.get_block_item(self.dest_index)
 
         #Qt Properties
-        self.setContentsMargins(0,10,0,10)
+        self.setContentsMargins(0,100,0,100)
         self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
         self.setPreferredHeight(20)
         self.setMinimumHeight(20)
@@ -201,10 +201,9 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
 
     def link(self):
         l = self._layout_manager.layout()
-#        self.setZValue(self.origin_band_item.rank+0.5)
+        self.setZValue(-0.5)
         l.addAnchor(self, Qt.AnchorBottom, self.origin, Qt.AnchorBottom)
         l.addAnchor(self, Qt.AnchorTop, self.origin, Qt.AnchorTop)
-        #TODO 
         l.addAnchor(self, Qt.AnchorLeft, self.origin, Qt.AnchorRight)
         l.addAnchor(self, Qt.AnchorRight, self.dest, Qt.AnchorLeft)
         self.bgcolor = QColor("gray")#self.itemA.bgcolor
