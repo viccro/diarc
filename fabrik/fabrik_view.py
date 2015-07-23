@@ -205,9 +205,9 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         l.addAnchor(self, Qt.AnchorBottom, self.origin, Qt.AnchorBottom)
         l.addAnchor(self, Qt.AnchorTop, self.origin, Qt.AnchorTop)
         #TODO 
-        #l.addAnchor(self, Qt.AnchorLeft, self.origin, Qt.AnchorRight)
-        #l.addAnchor(self, Qt.AnchorRight, self.dest, Qt.AnchorLeft)
-        self.bgcolor = self.itemA.bgcolor
+        l.addAnchor(self, Qt.AnchorLeft, self.origin, Qt.AnchorRight)
+        l.addAnchor(self, Qt.AnchorRight, self.dest, Qt.AnchorLeft)
+        self.bgcolor = QColor("gray")#self.itemA.bgcolor
         self.border_color = self.itemA.border_color
         self.label_color = self.itemA.label_color
 

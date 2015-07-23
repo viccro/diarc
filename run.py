@@ -69,6 +69,7 @@ def fabrikview(args=None):
         app = python_qt_binding.QtGui.QApplication([])
         view = fabrik_view.FabrikView()
         adapter = fabrik_adapter.FabrikAdapter(topology, view)
+        adapter.flow_arrangement_enforcer()
         adapter._update_view()
         view.activateWindow()
         view.raise_() 

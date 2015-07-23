@@ -88,6 +88,14 @@ class FabrikBlock(Block):
         super(FabrikBlock, self).__init__(vertex)
         self._node = vertex
 
+    def __str__(self):
+        string =  "<Block vertex=" + str(self.vertex.name) + ", index=" + str(self.index) + ", type=" + self.node.nodeType + ">"
+        return string
+
+    @property
+    def node(self):
+        return self._node
+
     @property
     def flows(self):
         return map(lambda x: x.flow, self._node.feeds)
