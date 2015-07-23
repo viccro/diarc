@@ -115,6 +115,97 @@ class FabrikAdapter(BaseAdapter):
         attrs.label = str(flow._routing_keys)
         return attrs
 
+    def move_block(self, originalIdx, destinationIdx):
+        log.debug("Moving block %s -> %s"%(str(originalIdx),str(destinationIdx)))
+        if originalIdx < destinationIdx:
+            self.reorder_blocks_no_update(originalIdx, destinationIdx, destinationIdx+1)
+        else:
+            self.reorder_blocks_no_update(originalIdx, destinationIdx - 1, destinationIdx)
+
+    def reorder_blocks_no_update(self,srcIdx,lowerIdx,upperIdx):
+        """ reorders the index values of blocks and triggers the view to redraw.
+        This also requires updating the corresponding block_items.
+        """ 
+        blocks = self._topology.blocks
+
+        lastIdx = None
+        currIdx = srcIdx
+        # If we are moving to the right, lowerIdx is the target index.
+        # Clear the dragged block's index, then shift all effected block
+        # indices left.
+        # NOTE: See issue #12
+        if lowerIdx is not None and lowerIdx > srcIdx:
+            while isinstance(currIdx,int) and currIdx < (upperIdx or lowerIdx+1): # In case upperIdx is None, use lower+1
+                nextIdx = blocks[currIdx].rightBlock.index if blocks[currIdx].rightBlock else None
+                blocks[currIdx].index = lastIdx
+                lastIdx = currIdx
+                currIdx = nextIdx
+            assert lastIdx == lowerIdx, "%r %r"%(lastIdx,upperIdx)
+
+        # If we are moving to the left, upperIdx is the target index.
+        # Clear the dragged blocks index, then shift all effected blocks right
+        elif upperIdx is not None and upperIdx < srcIdx:
+            while isinstance(currIdx,int) and currIdx > lowerIdx:
+                nextIdx = blocks[currIdx].leftBlock.index if blocks[currIdx].leftBlock else None
+                blocks[currIdx].index = lastIdx
+                lastIdx = currIdx
+                currIdx = nextIdx
+            assert lastIdx == upperIdx, "%r %r"%(lastIdx,upperIdx)
+
+        # Otherwise we are just dragging to the side a bit and nothing is 
+        # really moving anywhere. Return immediately to avoid trying to give
+        # the block a new index and unnecessary extra linking actions.
+        else:
+            return False
+        # Finally give the moved object its desired destination. Then make 
+        # the TopologyWidget relink all the objects again.
+        blocks[srcIdx].index = lastIdx
+        return True
+
+    def flow_arrangement_enforcer(self):
+        """Forces an acceptable order of blocks to permit drawing of flows"""
+        blocks = self._topology.blocks
+        log.debug("Enforcing Flow Arrangement")
+
+        maxBlockIdx = max([x for x in blocks])
+        currentIdx = 0
+        while currentIdx < maxBlockIdx:
+            offsetIdx = 0
+            #is the current block a destination? 
+            if not blocks[currentIdx].isFlowDest:
+                #if it's not an origin, keep going.
+                if not blocks[currentIdx].isFlowOrigin:
+                    pass
+                #If it *is* an origin, what is its destination?
+                else:
+                    destIdx = map(lambda x: x.dest.block.index, blocks[currentIdx].flowsGoingOut)
+                    if len(destIdx) > 1:
+                        pass #TODO
+                    else:
+                        destBlock = blocks[destIdx[0]]
+                        flowsGoingInToDestBlock = destBlock.flowsComingIn
+                        originsOfFlowsGoingInToDestBlock = map(lambda f: f.origin.block, flowsGoingInToDestBlock)
+                        for o in originsOfFlowsGoingInToDestBlock:
+                            #Don't move the one we're sitting on (or ones we've already processed)!
+                            if o.index > (currentIdx+offsetIdx):
+                                #Move each origin of the flows going into the dest block in front of it...
+                                offsetIdx += 1
+                                #TODO may need to check that thigns haven't moved...
+                                self.move_block(o.index, currentIdx+offsetIdx)
+                        #Double check that your dest block hasn't moved:
+                        offsetIdx += 1
+                        self.move_block(destBlock.index, currentIdx+offsetIdx)
+            #If it *is* a destination, shunt it to the end and keep going.
+            else:
+                self.move_block(currentIdx, maxBlockIdx)
+            currentIdx += (offsetIdx + 1)
+        log.debug("Finished Enforcing Flow Arrangement")
+
+    def reorder_blocks(self,srcIdx,lowerIdx,upperIdx):
+        if self.reorder_blocks_no_update(srcIdx, lowerIdx, upperIdx):
+            self.flow_arrangement_enforcer()
+            self._update_view()
+
     def _update_view(self):
         """ updates the view - compute each items neigbors and then calls linking. """
 
@@ -216,9 +307,10 @@ class FabrikAdapter(BaseAdapter):
             elif not isUsed and self._view.has_flow_item(flowlabel):
                 self._view.remove_flow_item(flowlabel)
                 self._cached_flow_item_labels.remove(flowlabel)
+                        
 
-        # Update the SnapItem cache list
-#         self._cached_snap_item_snapkeys = snaps.keys()
+
+
 
         log.debug("*** Computing neighbors ***")
         sys.stdout.flush()
@@ -248,7 +340,7 @@ class FabrikAdapter(BaseAdapter):
                 pos_alt = snap.posBandLink.altitude if snap.posBandLink else None
                 neg_alt = snap.negBandLink.altitude if snap.negBandLink else None
                 self._view.set_snap_item_settings(snap.snapkey(), left_order, right_order, pos_alt, neg_alt)
-        log.debug("bands")
+        log.debug("Bands")
         sys.stdout.flush()
         # Compute top and bottom bands, rank, leftmost, and rightmost snaps
         for altitude in bands:

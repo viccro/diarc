@@ -83,13 +83,40 @@ class FabrikGraph(Topology):
         altitudes = [band.altitude for band in self.bands.values()] + [0]
         return (max(altitudes)+1,min(altitudes)-1)
 
+class FabrikBlock(Block):
+    def __init__(self, vertex):
+        super(FabrikBlock, self).__init__(vertex)
+        self._node = vertex
 
+    @property
+    def flows(self):
+        return map(lambda x: x.flow, self._node.feeds)
+
+    @property
+    def flowsGoingOut(self):
+        return filter(lambda f: (f.origin.block == self), self.flows)
+
+    @property 
+    def flowsComingIn(self):
+        return filter(lambda f: (f.dest.block == self), self.flows)
+
+    @property
+    def isFlowOrigin(self):
+        if self.flowsGoingOut:
+            return True
+        return False
+
+    @property
+    def isFlowDest(self):
+        if self.flowsComingIn:
+            return True
+        return False
 
 class Node(Vertex):
     def __init__(self,fg):
         typecheck(fg,FabrikGraph,"fg")
         super(Node,self).__init__(fg)
-       
+        self._block = FabrikBlock(self)
         # dumb placement - just get the next free index
         self.block.index = fg.nextFreeNodeIndex()
             
@@ -112,8 +139,8 @@ class Node(Vertex):
 
     @property
     def feeds(self):
-        """Returns an unordered list of outgoing feeds from this node"""
-        return filter(lambda x: x.origin == self, self._topology._feeds)
+        """Returns an unordered list of outgoing feeds from this node and incoming feeds to it"""
+        return filter(lambda x: (x.origin == self) or (x.dest == self), self._topology._feeds)
 
 class Queue(Node):
     def __init__(self,fg,name=None):
