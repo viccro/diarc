@@ -1,3 +1,4 @@
+from diarc.snapkey import gen_snapkey, parse_snapkey
 from qt_view import qt_view
 from qt_view import SpacerContainer
 import logging
@@ -470,7 +471,7 @@ class FabrikBandItem(qt_view.BandItem):
         super(FabrikBandItem, self).__init__(parent, altitude, rank)
 
     def __str__(self):
-        return "<FabrikBandItem ", self.altitude, ">"
+        return "<FabrikBandItem " + str(self.altitude) +  ">"
 
     def link(self):
         sys.stdout.flush()
@@ -509,6 +510,25 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         item = FabrikBlockItem(self, index)
         self._block_items[index] = item
         return item
+
+    def set_snap_item_settings(self, snapkey, left_order, right_order, pos_band_alt, neg_band_alt):
+        # snapkey gets passed as a QString automatically since it goes across
+        # a signal/slot interface
+        snapkey = str(snapkey)
+        item = self._snap_items[snapkey]
+        if left_order is not None:
+            left_snapkey = gen_snapkey(item.block_index,item.container.strType(),left_order)
+            item.left_snap = self._snap_items[left_snapkey]
+        else:
+            item.left_snap = None
+            if right_order is not None:
+                right_snapkey = gen_snapkey(item.block_index,item.container.strType(),right_order)
+                item.right_snap = self._snap_items[right_snapkey]
+            else:
+                item.right_snap = None
+                item.posBandItem = self._band_items[pos_band_alt] if pos_band_alt is not None else None
+                print item.posBandItem
+                item.negBandItem = None
 
     def add_band_item(self, altitude, rank):
         """ Create a new drawable object to correspond to a Band. """

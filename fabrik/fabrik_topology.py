@@ -78,10 +78,9 @@ class FabrikGraph(Topology):
         """ returns the next available node index """
         return max(self.blocks.keys())+1 if len(self.blocks)>0 else 0
     
-    def nextFreeAltitudes(self):
-        """ returns a 2-tuple of (posAltitude,negAltitude) of the avaliable altitudes """
+    def nextFreeAltitude(self):
         altitudes = [band.altitude for band in self.bands.values()] + [0]
-        return (max(altitudes)+1,min(altitudes)-1)
+        return max(altitudes)+1
 
 class FabrikBlock(Block):
     def __init__(self, vertex):
@@ -204,12 +203,12 @@ class Exchange(FabrikEdge):
         super(Exchange,self).__init__(fg)
 
         self._pBand = FabrikBand(self,True)
-        self._nBand = FabrikBand(self,False)
+#        self._nBand = FabrikBand(self,False)
 
         # Dumb placement - just get the enxt free altitudes
-        self.posBand.altitude,self.negBand.altitude = fg.nextFreeAltitudes()
+        self.posBand.altitude = fg.nextFreeAltitude()
         self.posBand.rank = self.posBand.altitude
-        self.negBand.rank = self.posBand.altitude
+#        self.negBand.rank = self.posBand.altitude
 
         self.name = name
         log.debug("Adding Exchange " + str(name))
@@ -239,7 +238,7 @@ class FabrikBand(Band):
         super(FabrikBand, self).__init__(edge, isPositive)
 
     def isUsed(self):
-        return True
+       return self.isPositive 
 
     @property
     def hooks(self):
@@ -251,6 +250,26 @@ class FabrikBand(Band):
 
     def __str__(self):
         return "<FabrikBand item: " + self._edge.name + " (altitude " + str(self.altitude) + ")>"
+
+    @property
+    def emitters(self):
+        """ returns a list of source snaps that reach this band """
+        # We compare the position of each source against the position of the furthest
+        # away sink (depending on pos/neg altitude).
+        sinkBlockIndices = [s.block.index for s in self.edge.sinks]
+        sinkBlockIndices = filter(lambda x: isinstance(x,int), sinkBlockIndices)
+        if len(sinkBlockIndices) < 1:
+            return list()
+        return [s.snap for s in self.edge.sources]
+
+    @property
+    def collectors(self):
+        """ returns list of sink snaps that reach this band """
+        sourceBlockIndices = [s.block.index for s in self.edge.sources]
+        sourceBlockIndices = filter(lambda x: isinstance(x,int), sourceBlockIndices)
+        if len(sourceBlockIndices) < 1:
+            return list()
+        return [s.snap for s in self.edge.sinks]
 
 class FabrikSnap(Snap):
     """ Visual Representation of a Source or Sink.
