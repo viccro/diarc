@@ -71,23 +71,24 @@ def fabrikview(args=None):
         adapter = fabrik_adapter.FabrikAdapter(topology, view)
         adapter.flow_arrangement_enforcer()
         adapter._update_view()
+
+
         view.activateWindow()
-        view.raise_() 
+        view.raise_()
+#        python_qt_binding.QtGui.QPixmap.grabWindow(app.desktop().winId(),0,0, app.desktop().screenGeometry().width(),
+#                            app.desktop().screenGeometry().height()).save("~/Projects/diarc/screenShot.png");
         sys.exit(app.exec_())
 
 
 if __name__=="__main__":
-    available_tests = dict(inspect.getmembers(sys.modules[__name__],inspect.isfunction))
+    available_views = dict(inspect.getmembers(sys.modules[__name__],inspect.isfunction))
     
-    # Enable the next to rows to perform profiling
-#     rosview()
-#     exit()
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger('main')
 
     parser = argparse.ArgumentParser()
 
-    viewNameHelp = "Tests available:" + str(available_tests.keys())
+    viewNameHelp = "Views available:" + str(available_views.keys())
     parser.add_argument('viewName', help=viewNameHelp)
 
     pathHelp = "path to the directory containing .ini.j2 configuration files"
@@ -105,7 +106,7 @@ if __name__=="__main__":
     args = parser.parse_args()
     
     try:
-        available_tests[args.viewName](args)
+        available_views[args.viewName](args)
     except Exception as e:
         print e
         print "'./run.py -h' for help"

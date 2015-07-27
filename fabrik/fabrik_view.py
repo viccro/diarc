@@ -37,6 +37,9 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         self.setMinimumHeight(20)
         self.setAcceptHoverEvents(True)
 
+    def __str__(self):
+        return "<HookItem ", self._hook_label, ">"
+
     @property
     def itemA(self):
         return self.origin_band_item
@@ -125,7 +128,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
             arrow = QPolygon([QPoint(0,0), QPoint(arrow_width,0), QPoint(arrow_width/2.0,arrow_height)])
             arrow.translate(rect.x(),rect.y())
             #arrow.translate(rect.x()+arrow_margin,rect.y()+rect.height()-arrow_height-arrow_margin)
-        painter.drawPolygon(arrow)
+#        painter.drawPolygon(arrow)
 
         #Label
         painter.setPen(self.label_color)
@@ -156,11 +159,14 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         self.dest_node_item = self._layout_manager.get_block_item(self.dest_index)
 
         #Qt Properties
-        self.setContentsMargins(0,100,0,100)
+        self.setContentsMargins(0,50,0,50)
         self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
         self.setPreferredHeight(20)
         self.setMinimumHeight(20)
         self.setAcceptHoverEvents(True)
+
+    def __str__(self):
+        return "<FlowItem ", self._flow_label, ">"
 
     @property
     def origin(self):
@@ -192,7 +198,6 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         self.dest_node_item = None
         self.setVisible(False)
         self.setParent(None)
-#        super(FlowItem, self)._release()
 
     def set_attributes(self, attrs):
         self.setVisible(True)
@@ -202,10 +207,10 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
     def link(self):
         l = self._layout_manager.layout()
         self.setZValue(-0.5)
-        l.addAnchor(self, Qt.AnchorBottom, self.origin, Qt.AnchorBottom)
+#        l.addAnchor(self, Qt.AnchorBottom, self.origin, Qt.AnchorBottom)
         l.addAnchor(self, Qt.AnchorTop, self.origin, Qt.AnchorTop)
-        l.addAnchor(self, Qt.AnchorLeft, self.origin, Qt.AnchorRight)
-        l.addAnchor(self, Qt.AnchorRight, self.dest, Qt.AnchorLeft)
+        l.addAnchor(self, Qt.AnchorLeft, self.origin, Qt.AnchorLeft)
+        l.addAnchor(self, Qt.AnchorRight, self.dest, Qt.AnchorRight)
         self.bgcolor = QColor("gray")#self.itemA.bgcolor
         self.border_color = self.itemA.border_color
         self.label_color = self.itemA.label_color
@@ -417,6 +422,10 @@ class FabrikView(QGraphicsView, View):
 class FabrikBlockItem(qt_view.BlockItem):
     def __init__(self, parent, block_index):
         super(FabrikBlockItem, self).__init__(parent, block_index)
+        
+
+    def __str__(self):
+        return "<FabrikBlockItem ", self.node.index, ">"
 
     def paint(self,painter,option,widget):
         """Overwrites BlockItem.paint so that we can fill in the block rectangles"""
@@ -431,9 +440,21 @@ class FabrikBlockItem(qt_view.BlockItem):
         painter.setPen(border_pen)
         painter.drawRect(self.rect())
 
+class FabrikSnapItem(qt_view.SnapItem):
+    def __init__(self, parent, snapkey):
+        super(FabrikSnapItem, self).__init__(parent, snapkey)
+        self.setPreferredHeight(200)
+        self.setMaximumHeight(200)
+
+    def __str__(self):
+        return "<FabrikSnapItem ", self.snapkey, ">"
+
 class FabrikBandItem(qt_view.BandItem):
     def __init__(self, parent, altitude, rank):
         super(FabrikBandItem, self).__init__(parent, altitude, rank)
+
+    def __str__(self):
+        return "<FabrikBandItem ", self.altitude, ">"
 
     def link(self):
         sys.stdout.flush()
@@ -444,11 +465,18 @@ class FabrikBandItem(qt_view.BandItem):
         l.addAnchor(self, Qt.AnchorLeft, self._layout_manager.block_container, Qt.AnchorLeft) #TODO: return to left_most_snap after hooks work
         l.addAnchor(self, Qt.AnchorRight, self._layout_manager.block_container, Qt.AnchorRight)
 
+    def set_width(self, width):
+        """ Sets the 'width' of the band. 
+        This is actually setting the height, but is referred to as the width.
+        """
+        self.setPreferredHeight(width)
+        self.setMinimumHeight(width)
+
 class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def __init__(self, view):
         super(FabrikLayoutManagerWidget, self).__init__(view)
-        self._hook_items = TypedDict(str,HookItem)    # altitude    #TypedList(BandItem)
-        self._flow_items = TypedDict(str,FlowItem)  # snapkey  #TypedList(SnapItem)
+        self._hook_items = TypedDict(str,HookItem)
+        self._flow_items = TypedDict(str,FlowItem)  
         log.debug("Initialized Fabrik Layout Manager")
 
     def add_block_item(self, index):
@@ -467,6 +495,17 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
             raise DuplicateItemExistsError("BandItem with altitude %d already exists"%(altitude))
         item = FabrikBandItem(self, altitude, rank)
         self._band_items[altitude] = item
+        return item
+
+    def add_snap_item(self, snapkey):
+        # snapkey gets passed as a QString automatically since it goes across
+        # a signal/slot interface
+        snapkey = str(snapkey)
+        log.debug("... Adding SnapItem %s"%snapkey)
+        if snapkey in self._snap_items:
+            raise DuplicateItemExistsError("SnapItem with snapkey %s already exists"%(snapkey))
+        item = FabrikSnapItem(self, snapkey)
+        self._snap_items[snapkey] = item 
         return item
 
     def set_band_item_settings(self, altitude, rank,
@@ -598,6 +637,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
 
 class DuplicateItemExistsError(Exception):
     pass
+
 
 app = python_qt_binding.QtGui.QApplication(sys.argv)
 view = FabrikView()

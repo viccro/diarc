@@ -60,8 +60,8 @@ class FabrikAdapter(BaseAdapter):
             attrs.label_color = "black"
         else:
             attrs.bgcolor = "white"
-            attrs.border_color = "blue"
-            attrs.label_color = "blue"
+            attrs.border_color = "white"
+            attrs.label_color = "white"
         attrs.border_width = 1
         attrs.label = str(block._vertex.name)
         attrs.spacerwidth = 20
@@ -117,8 +117,6 @@ class FabrikAdapter(BaseAdapter):
         return attrs
 
     def move_block(self, originalIdx, destinationIdx):
-        blocks = self._topology.blocks
-        log.debug("Moving block %s -> %s"%(str(originalIdx),str(destinationIdx)))
         if originalIdx < destinationIdx:
             self.reorder_blocks_no_update(originalIdx, destinationIdx, destinationIdx+1)
         else:
@@ -361,7 +359,6 @@ class FabrikAdapter(BaseAdapter):
             
             left_snap = None
             right_snap = None
-            # Skip bands that don't have an item 
             try:
                 if band.isPositive:
                     left_snap = emitters[0]
