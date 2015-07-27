@@ -129,7 +129,6 @@ class Node(Vertex):
         if self.feeds is None:
             self.block.index = fg.nextFreeNodeIndex()
         else:
-            print "Woah there"
             self.block.index = fg.nextFreeNodeIndex()
 
         self.name = None

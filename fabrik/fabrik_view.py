@@ -4,8 +4,8 @@ import logging
 import hooklabel
 import flowlabel
 from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene, QGraphicsAnchorLayout
-from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon, QToolTip
-from python_qt_binding.QtCore import Qt, QPoint
+from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon, QToolTip, QLinearGradient
+from python_qt_binding.QtCore import Qt, QPoint, QRectF
 from python_qt_binding.QtCore import pyqtSignal as Signal
 import python_qt_binding.QtGui
 import sys
@@ -39,6 +39,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
 
     def __str__(self):
         return "<HookItem ", self._hook_label, ">"
+
 
     @property
     def itemA(self):
@@ -79,6 +80,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
 #        super(HookItem, self).release()
 
     def set_attributes(self, attrs):
+        print "Setting attributes"
         self.setVisible(True)
         self.update(self.rect())
         self.copy_attributes(attrs)
@@ -95,8 +97,12 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         self.label_color = self.itemA.label_color
 
     def paint(self, painter, option, widget):
+        #Set background color
+        grad = QLinearGradient(QRectF(self.rect()).topLeft(),QRectF(self.rect()).topRight())
+        grad.setColorAt(0,self.bgcolor)
+        grad.setColorAt(1,QColor("gray"))
         #Paint background
-        brush = QBrush()
+        brush = QBrush(grad)
         brush.setStyle(Qt.SolidPattern)
         brush.setColor(self.bgcolor)
         painter.fillRect(self.rect(),brush)
@@ -131,6 +137,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
 #        painter.drawPolygon(arrow)
 
         #Label
+#        print "Label: ", self.hook._routing_keys
         painter.setPen(self.label_color)
         painter.rotate(-90)
         fm = painter.fontMetrics()
@@ -440,6 +447,12 @@ class FabrikBlockItem(qt_view.BlockItem):
         painter.setPen(border_pen)
         painter.drawRect(self.rect())
 
+    def hoverEnterEvent(self, event):
+        QToolTip.showText(event.screenPos(),self.label)
+
+    def hoverLeaveEvent(self, event):
+        QToolTip.hideText()
+
 class FabrikSnapItem(qt_view.SnapItem):
     def __init__(self, parent, snapkey):
         super(FabrikSnapItem, self).__init__(parent, snapkey)
@@ -448,6 +461,12 @@ class FabrikSnapItem(qt_view.SnapItem):
 
     def __str__(self):
         return "<FabrikSnapItem ", self.snapkey, ">"
+
+    def hoverEnterEvent(self, event):
+        QToolTip.showText(event.screenPos(),self.label)
+
+    def hoverLeaveEvent(self, event):
+        QToolTip.hideText()
 
 class FabrikBandItem(qt_view.BandItem):
     def __init__(self, parent, altitude, rank):
@@ -471,6 +490,12 @@ class FabrikBandItem(qt_view.BandItem):
         """
         self.setPreferredHeight(width)
         self.setMinimumHeight(width)
+
+    def hoverEnterEvent(self, event):
+        QToolTip.showText(event.screenPos(),self.label)
+
+    def hoverLeaveEvent(self, event):
+        QToolTip.hideText()
 
 class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def __init__(self, view):
