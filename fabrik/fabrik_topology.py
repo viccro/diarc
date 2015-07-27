@@ -135,6 +135,10 @@ class Node(Vertex):
         self.location = None
         self.nodeType = None
 
+    def __str__(self):
+        string =  "<Node=" + str(self.name) + ", index=" + str(self.block.index) + ", type=" + self.nodeType + ">"
+        return string
+
     @property
     def producers(self):
         # NOTE: This must be a property function (instead of just saying 
@@ -210,6 +214,10 @@ class Exchange(FabrikEdge):
         self.name = name
         log.debug("Adding Exchange " + str(name))
 
+    def __str__(self):
+        string =  "<Exchange=" + str(self.name) + ">"
+        return string
+
     @property
     def transfers(self):
         """Returns an unordered list of outgoing transfers from this exchange"""
@@ -241,6 +249,23 @@ class FabrikBand(Band):
         else:
             return dict()
 
+    def __str__(self):
+        return "<FabrikBand item: " + self._edge.name + " (altitude " + str(self.altitude) + ")>"
+
+class FabrikSnap(Snap):
+    """ Visual Representation of a Source or Sink.
+        Snaps are layedout horizontally inside of an Emitter or Collector of a Block.
+        A Snap provides a mapping between a Source/Sink and one or two Bands associated with a single Edge.
+        Visual Layout Paramters
+        Order - 0-indexed order in which to draw snaps within an Emitter or Collector 
+    """
+
+    def __init__(self,connection):
+        super(FabrikSnap, self).__init__(connection)
+
+    def isUsed(self):
+        return True
+
 class Producer(Source):
     def __init__(self,fg,node,exchange,routingKeys = None):
         typecheck(fg,FabrikGraph,"fg")
@@ -253,6 +278,9 @@ class Producer(Source):
         self.bandwidth = None
         self.routingKeys = routingKeys
         log.debug("Adding Producer: " + str(node.name)+" to "+str(exchange.name)+" with routing-keys "+str(routingKeys))
+
+    def __str__(self):
+        return "<Producer: "+self.node.name+"(node) -> "+self.exchange.name+"(exch)>"
 
     @property
     def exchange(self):
@@ -278,8 +306,11 @@ class Consumer(Sink):
         self.routingKeys = routingKeys
         log.debug("Adding Consumer: " + str(exchange.name)+" to "+str(node.name)+" with routing-keys "+str(routingKeys))
 
+    def __str__(self):
+        return "<Consumer: "+self.node.name+"(node) <- "+self.exchange.name+"(exch)>"
+
     @property
-    def topic(self):
+    def exchange(self):
         # NOTE: See note on Node class about why this MUST be a property.
         return self.edge
 

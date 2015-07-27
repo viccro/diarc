@@ -71,26 +71,6 @@ def extract_features(path, filename, fabrik):
     set_sub_features(sub_options, fabrik, filename, sb)
     return fabrik
 
-def set_pub_features(pub_options, fabrik, filename, sb):
-    '''Pulls out appropriate features from config "options" and adds them to the fabrik topology'''
-    for opt in pub_options:
-        try:
-            pubDict = json.loads(opt)
-        except:
-            log.debug( "Invalid json in file "+filename)
-            exit(-1)
-
-        try:
-            exchangeName = pubDict['exchange-spec'].get(u'name')
-        except:
-            exchangeName = pubDict['exchange-spec']
-        
-        exchange = add_exchange(fabrik, exchangeName)
-        producer = Producer(fabrik, sb, exchange)
-
-        if 'bindings' in pubDict.keys():
-            parse_pub_bindings(fabrik,pubDict['bindings'], exchange)
-
 def add_exchange(fabrik, exchangeName):
     '''Add exchanges and bindings for first step out in publishing (top level exchange-spec)'''
     return add_object_to_fabrik(fabrik, exchangeName, fabrik.exchanges, Exchange)
@@ -120,6 +100,26 @@ def add_feed(fabrik, origin_node, dest_node, routingKeys=None):
             return
     node_to_node = Feed(fabrik, origin_node, dest_node, routingKeys)
     log.debug("Adding Feed from "+node_to_node.origin.name+" to "+node_to_node.dest.name +" with routing-keys "+str(routingKeys))
+
+def set_pub_features(pub_options, fabrik, filename, sb):
+    '''Pulls out appropriate features from config "options" and adds them to the fabrik topology'''
+    for opt in pub_options:
+        try:
+            pubDict = json.loads(opt)
+        except:
+            log.debug( "Invalid json in file "+filename)
+            exit(-1)
+
+        try:
+            exchangeName = pubDict['exchange-spec'].get(u'name')
+        except:
+            exchangeName = pubDict['exchange-spec']
+        
+        exchange = add_exchange(fabrik, exchangeName)
+        Producer(fabrik, sb, exchange)
+
+        if 'bindings' in pubDict.keys():
+            parse_pub_bindings(fabrik,pubDict['bindings'], exchange)
 
 def parse_pub_bindings(fabrik, bindings, publishing_exchange):
     '''Add exchanges and bindings for next steps out (recursively parsing bindings)'''
@@ -175,6 +175,7 @@ def parse_sub_bindings(fabrik, bindings, subscribing_queue):
             except:
                 newSubExchangeName = b['bind-tree']['exchange-spec']
             newSubExchange = add_exchange(fabrik, newSubExchangeName)
+            Consumer(fabrik, subscribing_queue, newSubExchangeName, routingKeys)
             parse_sub_bindings(fabrik, newBindings, newSubExchange) 
         else: #base-case
             try:

@@ -220,6 +220,8 @@ class FabrikAdapter(BaseAdapter):
         hooks = self._topology.hooks
         flows = self._topology.flows
 
+        print [s._connection.__str__() for s in snaps.values()]
+
         # Delete outdated BlockItems still in the view but no longer in the topology
         old_block_item_indexes = list(set(self._cached_block_item_indexes) - set(blocks.keys()))
         for index in old_block_item_indexes:
@@ -273,6 +275,7 @@ class FabrikAdapter(BaseAdapter):
                 self._view.add_snap_item(snapkey)
                 self._cached_snap_item_snapkeys.append(snapkey)
             elif not isUsed and self._view.has_snap_item(snapkey):
+                print "REMOVING"
                 self._view.remove_snap_item(snapkey)
                 self._cached_snap_item_snapkeys.remove(snapkey)
        
@@ -311,9 +314,6 @@ class FabrikAdapter(BaseAdapter):
             elif not isUsed and self._view.has_flow_item(flowlabel):
                 self._view.remove_flow_item(flowlabel)
                 self._cached_flow_item_labels.remove(flowlabel)
-                        
-
-
 
 
         log.debug("*** Computing neighbors ***")
@@ -389,6 +389,7 @@ class FabrikAdapter(BaseAdapter):
                 #Figure out which object is furthest left/right (hook or snap):
             if left_snap is not None:
                 if left_hook_latch is not None:     #Both snaps and latches
+                    print band, band.emitters, band.collectors
                     left_snap_index = left_snap.block.index
                     left_hook_index = left_hook_latch
                     right_snap_index = right_snap.block.index
@@ -397,13 +398,16 @@ class FabrikAdapter(BaseAdapter):
                     left_most_item = left_snapkey if (left_snap_index < left_hook_index) else left_hook_label
                     right_most_item = right_snapkey if (right_snap_index > right_hook_index) else right_hook_label
                 else: #Snaps but no latches        
+                    print band, band.emitters, band.collectors
                     left_most_item = left_snapkey
                     right_most_item = right_snapkey
             else: 
                 if left_hook_latch is not None:     #latches but not snaps
+                    print band, band.emitters, band.collectors
                     left_most_item = left_hook_label
                     right_most_item = right_hook_label
                 else: #Neither
+                    print "Unused band: ", band, band.emitters, band.collectors
                     left_most_item = None
                     right_most_item = None
 
@@ -439,7 +443,6 @@ class FabrikAdapter(BaseAdapter):
         for flowlabel in flows:
             attributes = self.get_flow_item_attributes(flowlabel)
             self._view.set_flow_item_attributes(flowlabel, attributes)
-
         
 
         log.debug("*** Finished Assigning Attributes ***")

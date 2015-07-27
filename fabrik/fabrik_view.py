@@ -77,10 +77,8 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         self.dest_band_item = None
         self.setVisible(False)
         self.setParent(None)
-#        super(HookItem, self).release()
 
     def set_attributes(self, attrs):
-        print "Setting attributes"
         self.setVisible(True)
         self.update(self.rect())
         self.copy_attributes(attrs)
@@ -137,7 +135,6 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
 #        painter.drawPolygon(arrow)
 
         #Label
-#        print "Label: ", self.hook._routing_keys
         painter.setPen(self.label_color)
         painter.rotate(-90)
         fm = painter.fontMetrics()
