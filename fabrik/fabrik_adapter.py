@@ -353,10 +353,9 @@ class FabrikAdapter(BaseAdapter):
             bot_alt = band.bottomBand.altitude if band.bottomBand else None
             emitters = band.emitters
             collectors = band.collectors
-            #TODO hooks = band.hooks
             emitters.sort(lambda x,y: x.block.index - y.block.index)
             collectors.sort(lambda x,y: x.block.index - y.block.index)
-            
+
             left_snap = None
             right_snap = None
             try:
@@ -370,6 +369,47 @@ class FabrikAdapter(BaseAdapter):
                 pass
             left_snapkey = left_snap.snapkey() if left_snap is not None else None
             right_snapkey = right_snap.snapkey() if right_snap is not None else None
+
+            #Also compute leftmost and rightmost hooks:
+            hooks = band.hooks
+            left_hook_latch = None
+            right_hook_latch = None
+            
+            latches = {h.latch.block.index: h.hooklabel() for h in hooks.values()}  
+
+            if latches:
+                left_hook_latch = min(sorted(latches))
+                right_hook_latch = max(sorted(latches))
+    
+                left_hook_label = latches[left_hook_latch] if left_hook_latch is not None else None
+                right_hook_label = latches[right_hook_latch] if right_hook_latch is not None else None
+    
+                left_hook = hooks[left_hook_label]
+                right_hook = hooks[left_hook_label]
+                #Figure out which object is furthest left/right (hook or snap):
+            if left_snap is not None:
+                if left_hook_latch is not None:     #Both snaps and latches
+                    left_snap_index = left_snap.block.index
+                    left_hook_index = left_hook_latch
+                    right_snap_index = right_snap.block.index
+                    right_hook_index = right_hook_latch
+    
+                    left_most_item = left_snap if (left_snap_index < left_hook_index) else left_hook
+                    right_most_item = right_snap if (right_snap_index > right_hook_index) else right_hook
+                else: #Snaps but no latches        
+                    left_most_item = left_snap
+                    right_most_item = right_snap
+            else: 
+                if left_hook_latch is not None:     #latches but not snaps
+                    left_most_item = left_hook
+                    right_most_item = right_hook
+                else: #Neither
+                    left_most_item = None
+                    right_most_item = None
+
+            print left_most_item
+            print right_most_item
+
             self._view.set_band_item_settings(altitude, band.rank, top_alt, bot_alt, left_snapkey, right_snapkey )
 
         #Don't need hook neighbor information, because they're 1:1 with latch-blocks

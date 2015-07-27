@@ -464,7 +464,7 @@ class FabrikBandItem(qt_view.BandItem):
         l = self.parent.layout()
         l.addAnchor(self, Qt.AnchorLeft, self._layout_manager.block_container, Qt.AnchorLeft) #TODO: return to left_most_snap after hooks work
         l.addAnchor(self, Qt.AnchorRight, self._layout_manager.block_container, Qt.AnchorRight)
-
+    
     def set_width(self, width):
         """ Sets the 'width' of the band. 
         This is actually setting the height, but is referred to as the width.

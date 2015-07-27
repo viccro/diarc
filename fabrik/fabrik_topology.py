@@ -230,6 +230,14 @@ class FabrikBand(Band):
     def isUsed(self):
         return True
 
+    @property
+    def hooks(self):
+        transfers = self.edge.transfers
+        if transfers:
+            return {t.hook.hooklabel(): t.hook for t in transfers}
+        else:
+            return dict()
+
 class Producer(Source):
     def __init__(self,fg,node,exchange,routingKeys = None):
         typecheck(fg,FabrikGraph,"fg")
