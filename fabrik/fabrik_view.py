@@ -359,8 +359,8 @@ class FabrikView(QGraphicsView, View):
         self.__remove_band_item_signal.emit(altitude)
 
     def set_band_item_settings(self, altitude, rank, top_band_alt, bot_band_alt,
-                                leftmost_snapkey, rightmost_snapkey):
-        self.__set_band_item_settings_signal.emit(altitude, rank, top_band_alt, bot_band_alt, leftmost_snapkey, rightmost_snapkey)
+                                leftmost_object_label, rightmost_object_label):
+        self.__set_band_item_settings_signal.emit(altitude, rank, top_band_alt, bot_band_alt, leftmost_object_label, rightmost_object_label)
 
     def set_band_item_attributes(self, altitude, attributes):
         self.__set_band_item_attributes_signal.emit(altitude, attributes)
