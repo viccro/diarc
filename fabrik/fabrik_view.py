@@ -462,9 +462,9 @@ class FabrikBandItem(qt_view.BandItem):
         super(qt_view.BandItem,self).link()
         # Assign the horizontal Anchors
         l = self.parent.layout()
-        l.addAnchor(self, Qt.AnchorLeft, self._layout_manager.block_container, Qt.AnchorLeft) #TODO: return to left_most_snap after hooks work
-        l.addAnchor(self, Qt.AnchorRight, self._layout_manager.block_container, Qt.AnchorRight)
-    
+        l.addAnchor(self, Qt.AnchorLeft, self.left_most_obj, Qt.AnchorLeft)
+        l.addAnchor(self, Qt.AnchorRight, self.right_most_obj, Qt.AnchorRight)
+
     def set_width(self, width):
         """ Sets the 'width' of the band. 
         This is actually setting the height, but is referred to as the width.
@@ -510,19 +510,25 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
 
     def set_band_item_settings(self, altitude, rank,
                                top_band_alt, bot_band_alt,
-                               leftmost_snapkey, rightmost_snapkey):
+                               leftmost_object_label, rightmost_object_label):
         item = self._band_items[altitude]
         item.rank = rank
         item.top_band = self._band_items[top_band_alt] if top_band_alt is not None else None
         item.bot_band = self._band_items[bot_band_alt] if bot_band_alt is not None else None
-        if leftmost_snapkey == '':
-            item.left_most_snap = self.bandStack
+        if leftmost_object_label == '':
+            item.left_most_obj = self.bandStack
         else:
-            item.left_most_snap = self._snap_items[str(leftmost_snapkey)]
-        if rightmost_snapkey == '':
-            item.right_most_snap = self.bandStack
+            if ("e" in leftmost_object_label) or ("c" in leftmost_object_label):
+                item.left_most_obj = self._snap_items[str(leftmost_object_label)]
+            else: # Not snap, but hook
+                item.left_most_obj = self._hook_items[str(leftmost_object_label)]
+        if rightmost_object_label == '':
+            item.right_most_obj = self.bandStack
         else:
-            item.right_most_snap = self._snap_items[str(rightmost_snapkey)]
+            if ("e" in rightmost_object_label) or ("c" in rightmost_object_label):
+                item.right_most_obj = self._snap_items[str(rightmost_object_label)]
+            else: #Not snap, but hook
+                item.right_most_obj = self._hook_items[str(rightmost_object_label)]
 
     def add_hook_item(self, hook_label):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface

@@ -350,9 +350,6 @@ class Block(object):
         self._topology = None
 
 
-
-
-
     @property
     def vertex(self):
         """ Returns the logical component (Vertex) for this relative object.

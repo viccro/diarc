@@ -394,15 +394,15 @@ class FabrikAdapter(BaseAdapter):
                     right_snap_index = right_snap.block.index
                     right_hook_index = right_hook_latch
     
-                    left_most_item = left_snap if (left_snap_index < left_hook_index) else left_hook
-                    right_most_item = right_snap if (right_snap_index > right_hook_index) else right_hook
+                    left_most_item = left_snapkey if (left_snap_index < left_hook_index) else left_hook_label
+                    right_most_item = right_snapkey if (right_snap_index > right_hook_index) else right_hook_label
                 else: #Snaps but no latches        
-                    left_most_item = left_snap
-                    right_most_item = right_snap
+                    left_most_item = left_snapkey
+                    right_most_item = right_snapkey
             else: 
                 if left_hook_latch is not None:     #latches but not snaps
-                    left_most_item = left_hook
-                    right_most_item = right_hook
+                    left_most_item = left_hook_label
+                    right_most_item = right_hook_label
                 else: #Neither
                     left_most_item = None
                     right_most_item = None
@@ -410,7 +410,7 @@ class FabrikAdapter(BaseAdapter):
             print left_most_item
             print right_most_item
 
-            self._view.set_band_item_settings(altitude, band.rank, top_alt, bot_alt, left_snapkey, right_snapkey )
+            self._view.set_band_item_settings(altitude, band.rank, top_alt, bot_alt, left_most_item, right_most_item )
 
         #Don't need hook neighbor information, because they're 1:1 with latch-blocks
         #Flow information will be linked in with block sorting
