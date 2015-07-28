@@ -75,10 +75,10 @@ def fabrikview(args=None):
 
         view.activateWindow()
         view.raise_()
-#        python_qt_binding.QtGui.QPixmap.grabWindow(app.desktop().winId(),0,0, app.desktop().screenGeometry().width(),
-#                            app.desktop().screenGeometry().height()).save("~/Projects/diarc/screenShot.png");
+        thing = python_qt_binding.QtGui.QPixmap.grabWidget(view)
+        if thing.save("/Users/206790/Projects/diarc/Screenshot.jpg", 'jpg'):
+            print "Saved image:",thing.size().height(), thing.size().width()
         sys.exit(app.exec_())
-
 
 if __name__=="__main__":
     available_views = dict(inspect.getmembers(sys.modules[__name__],inspect.isfunction))
@@ -93,7 +93,7 @@ if __name__=="__main__":
 
     pathHelp = "path to the directory containing .ini.j2 configuration files"
     parser.add_argument('--path', help=pathHelp)
-    
+    '''
     ec2Help = "ec2 id"
     parser.add_argument('--ec2_id', help=ec2Help)
     
@@ -102,7 +102,7 @@ if __name__=="__main__":
 
     silverHelp = "Array of silver products"
     parser.add_argument('--silver_products', help=silverHelp)
-
+    '''
     args = parser.parse_args()
     
 #    try:

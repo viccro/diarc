@@ -4,7 +4,7 @@ import logging
 import hooklabel
 import flowlabel
 from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene, QGraphicsAnchorLayout
-from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon, QToolTip
+from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon, QToolTip, QPixmap
 from python_qt_binding.QtCore import Qt, QPoint
 from python_qt_binding.QtCore import pyqtSignal as Signal
 import python_qt_binding.QtGui
@@ -531,6 +531,14 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         item.rank = rank
         item.top_band = self._band_items[top_band_alt] if top_band_alt is not None else None
         item.bot_band = self._band_items[bot_band_alt] if bot_band_alt is not None else None
+#TODO: fix band widths
+        #If there's only one item on the band, make it wider if possible
+#        if (left_most_item == right_most_item) and (left_most_item != None):
+#            if left_most_item > 0:
+#                left_most_item -= 1
+#            if right_most_item < max(sorted(blocks)):
+#                right_most_item +=1
+
         if leftmost_object_label == '':
             item.left_most_obj = self.bandStack
         else:
@@ -655,7 +663,14 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
             item.link()
 
         log.debug("*** Finished Linking ***\n")
+#        take_screenshot(self.layout())
         sys.stdout.flush()
+
+#def take_screenshot(widget):
+#    filename = 'Screenshot.jpg'
+#    p = QPixmap.grabWindow(widget)#.winId())
+#    p.save(filename, 'jpg')
+
 
 class DuplicateItemExistsError(Exception):
     pass

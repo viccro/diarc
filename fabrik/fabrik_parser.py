@@ -60,6 +60,7 @@ def extract_features(path, filename, fabrik):
         pub_options = [config.get('Topology', opt) for opt in config.options('Topology') if opt.startswith('publish_')]
     except:
         log.debug( "Invalid file in specified path: "+ filename)
+        print "yup"
         return
 #        exit(-1)
 
@@ -108,7 +109,7 @@ def set_pub_features(pub_options, fabrik, filename, sb):
             pubDict = json.loads(opt)
         except:
             log.debug( "Invalid json in file "+filename)
-            exit(-1)
+            return
 
         try:
             exchangeName = pubDict['exchange-spec'].get(u'name')
@@ -190,6 +191,6 @@ def parse_sub_bindings(fabrik, bindings, subscribing_queue):
             exchange = add_exchange(fabrik,exchangeName)
             Consumer(fabrik, subscribing_queue, exchange, routingKeys) 
 
-mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
-t = build_topology(mypath)
+#mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
+#t = build_topology(mypath)
 

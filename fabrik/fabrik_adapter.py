@@ -364,6 +364,7 @@ class FabrikAdapter(BaseAdapter):
                     right_snap = emitters[-1]
             except:
                 pass
+
             left_snapkey = left_snap.snapkey() if left_snap is not None else None
             right_snapkey = right_snap.snapkey() if right_snap is not None else None
 
@@ -405,6 +406,7 @@ class FabrikAdapter(BaseAdapter):
                     left_most_item = None
                     right_most_item = None
 
+
             self._view.set_band_item_settings(altitude, band.rank, top_alt, bot_alt, left_most_item, right_most_item )
 
         #Don't need hook neighbor information, because they're 1:1 with latch-blocks
@@ -441,7 +443,6 @@ class FabrikAdapter(BaseAdapter):
 
         log.debug("*** Finished Assigning Attributes ***")
         self._view.update_view()
-
 
 class ColorMapper(object):
     def __init__(self):
