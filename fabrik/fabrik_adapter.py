@@ -371,11 +371,11 @@ class FabrikAdapter(BaseAdapter):
             right_snapkey = right_snap.snapkey() if right_snap is not None else None
 
             #Also compute leftmost and rightmost hooks:
-            _hooks = band.hooks
+            hooks = band.hooks
             left_hook_latch = None
             right_hook_latch = None
             
-            latches = {h.latch.block.index: h.hooklabel() for h in _hooks.values()}  
+            latches = {h.latch.block.index: h.hooklabel() for h in hooks.values()}  
 
             if latches:
                 left_hook_latch = min(sorted(latches))
@@ -410,6 +410,9 @@ class FabrikAdapter(BaseAdapter):
                     print "Unused band: ", band, band.emitters, band.collectors
                     left_most_item = None
                     right_most_item = None
+
+            print left_most_item
+            print right_most_item
 
             self._view.set_band_item_settings(altitude, band.rank, top_alt, bot_alt, left_most_item, right_most_item )
 
