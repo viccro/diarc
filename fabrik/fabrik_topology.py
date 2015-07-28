@@ -78,10 +78,9 @@ class FabrikGraph(Topology):
         """ returns the next available node index """
         return max(self.blocks.keys())+1 if len(self.blocks)>0 else 0
     
-    def nextFreeAltitudes(self):
-        """ returns a 2-tuple of (posAltitude,negAltitude) of the avaliable altitudes """
+    def nextFreeAltitude(self):
         altitudes = [band.altitude for band in self.bands.values()] + [0]
-        return (max(altitudes)+1,min(altitudes)-1)
+        return max(altitudes)+1
 
 class FabrikBlock(Block):
     def __init__(self, vertex):
@@ -205,12 +204,10 @@ class Exchange(FabrikEdge):
         super(Exchange,self).__init__(fg)
 
         self._pBand = FabrikBand(self,True)
-        self._nBand = FabrikBand(self,False)
 
         # Dumb placement - just get the enxt free altitudes
-        self.posBand.altitude,self.negBand.altitude = fg.nextFreeAltitudes()
+        self.posBand.altitude = fg.nextFreeAltitude()
         self.posBand.rank = self.posBand.altitude
-        self.negBand.rank = self.posBand.altitude
 
         self.name = name
         log.debug("Adding Exchange " + str(name))

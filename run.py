@@ -105,8 +105,8 @@ if __name__=="__main__":
 
     args = parser.parse_args()
     
-    try:
-        available_views[args.viewName](args)
-    except Exception as e:
-        print e
-        print "'./run.py -h' for help"
+#    try:
+    available_views[args.viewName](args)
+    #except Exception as e:
+        #print e
+        #print "'./run.py -h' for help"
