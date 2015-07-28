@@ -368,12 +368,7 @@ class FabrikAdapter(BaseAdapter):
             right_snapkey = right_snap.snapkey() if right_snap is not None else None
 
             #Also compute leftmost and rightmost hooks:
-            print band.edge.name
-            _hooks = dict()
-            try: #TODO what teh heck
-                _hooks = band.hooks
-            except:
-                pass
+            _hooks = band.hooks
             left_hook_latch = None
             right_hook_latch = None
             

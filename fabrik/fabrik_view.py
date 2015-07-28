@@ -421,7 +421,6 @@ class FabrikView(QGraphicsView, View):
 class FabrikBlockItem(qt_view.BlockItem):
     def __init__(self, parent, block_index):
         super(FabrikBlockItem, self).__init__(parent, block_index)
-        
 
     def __str__(self):
         return "<FabrikBlockItem ", self.node.index, ">"
@@ -438,6 +437,12 @@ class FabrikBlockItem(qt_view.BlockItem):
         border_pen.setWidth(self.border_width)
         painter.setPen(border_pen)
         painter.drawRect(self.rect())
+    
+    def hoverEnterEvent(self, event):
+        QToolTip.showText(event.screenPos(),self.label)
+
+    def hoverLeaveEvent(self, event):
+        QToolTip.hideText()
 
 class FabrikSnapItem(qt_view.SnapItem):
     def __init__(self, parent, snapkey):
@@ -447,6 +452,12 @@ class FabrikSnapItem(qt_view.SnapItem):
 
     def __str__(self):
         return "<FabrikSnapItem ", self.snapkey, ">"
+    
+    def hoverEnterEvent(self, event):
+        QToolTip.showText(event.screenPos(),self.label)
+
+    def hoverLeaveEvent(self, event):
+        QToolTip.hideText()
 
 class FabrikBandItem(qt_view.BandItem):
     def __init__(self, parent, altitude, rank):
@@ -470,6 +481,12 @@ class FabrikBandItem(qt_view.BandItem):
         """
         self.setPreferredHeight(width)
         self.setMinimumHeight(width)
+
+    def hoverEnterEvent(self, event):
+        QToolTip.showText(event.screenPos(),self.label)
+
+    def hoverLeaveEvent(self, event):
+        QToolTip.hideText()
 
 class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def __init__(self, view):

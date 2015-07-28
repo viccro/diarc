@@ -125,11 +125,7 @@ class Node(Vertex):
         super(Node,self).__init__(fg)
         self._block = FabrikBlock(self)
         # dumb placement - just get the next free index
-        if self.feeds is None:
-            self.block.index = fg.nextFreeNodeIndex()
-        else:
-            print "Woah there"
-            self.block.index = fg.nextFreeNodeIndex()
+        self.block.index = fg.nextFreeNodeIndex()
 
         self.name = None
         self.location = None
