@@ -64,17 +64,14 @@ def fabrikview(args=None):
     from fabrik import fabrik_view
     from fabrik import fabrik_adapter
     from fabrik import fabrik_parser
-    ec2 = args.ec2_id if args.ec2_id else ''
-    region = args.region if args.region else ''
-    sp = args.silver_products if args.silver_products else ''
-
     if args.path:
-        topology = fabrik_parser.build_topology(args.path, ec2, region, sp)
+        topology = fabrik_parser.build_topology(args.path)
         app = python_qt_binding.QtGui.QApplication([])
         view = fabrik_view.FabrikView()
         adapter = fabrik_adapter.FabrikAdapter(topology, view)
         adapter.flow_arrangement_enforcer()
         adapter._update_view()
+
 
         view.activateWindow()
         view.raise_()

@@ -4,7 +4,6 @@ import os
 import os.path
 from fabrik_topology import *
 import logging
-import jinja2
 # Parses fabrik .ini.j2 files and returns a FabrikGraph object
 #
 # Assumed format of Topology sections:
@@ -40,32 +39,22 @@ def get_files(path):
     files = [ f for f in os.listdir(path) if (os.path.isfile(os.path.join(path,f)) and f.endswith('ini.j2')) ]
     return files
 
-def build_topology(path, ec2_id = '', region = '', silver_products = ''):
+def build_topology(path):
     fabrik = FabrikGraph()
     
     for f in get_files(path):
         try:
-            extract_features(path,f, fabrik, ec2_id, region, silver_products)
+            extract_features(path,f, fabrik)
         except Exception as ex:
             log.debug(str(ex))
 
     return fabrik
 
-def extract_features(path, filename, fabrik, ec2_id, region, sp):
+def extract_features(path, filename, fabrik):
     '''extract features from a given file and puts them in the fabrik topology'''
     typecheck(fabrik,FabrikGraph,"fg")
     config = ConfigParser.ConfigParser()
     try:
-        templateLoader = jinja2.FileSystemLoader( searchpath=path )
-        templateEnv = jinja2.Environment( loader=templateLoader )
-        
-        template = templateEnv.get_template(filename)
-        templateVars = {"ec2_id": ec2_id,
-                        "region": region,
-                        "silver-products": sp}
-
-        outputText = template.render( templateVars )
-
         config.read(os.path.join(path,filename))
         sub_options = [config.get('Topology', opt) for opt in config.options('Topology') if opt.startswith('subscribe_')]
         pub_options = [config.get('Topology', opt) for opt in config.options('Topology') if opt.startswith('publish_')]
@@ -202,5 +191,5 @@ def parse_sub_bindings(fabrik, bindings, subscribing_queue):
             Consumer(fabrik, subscribing_queue, exchange, routingKeys) 
 
 mypath = '/Users/206790/Projects/fabrik-config-management/provisioning/roles/core/templates/etc/fabrik/' 
-#t = build_topology(mypath)
+t = build_topology(mypath)
 
