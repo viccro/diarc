@@ -684,34 +684,11 @@ class Snap(object):
         Just because a positive band link exists does not mean that it should
         be drawn. The check for if we should draw the connection happens at drawing
         time when we decide if we should be using positive or negative"""
-        pBand = self._connection.edge._pBand
-        # If you are a source snap and there is a sink snap to the right, you connect to this band
-        if self.isSource(): 
-            indices =  [sink.block.index for sink in pBand.collectors]
-            if len(indices) > 0 and max(indices) > self.block.index:
-                return pBand
-        # if you are a sink snap and there is a source snap to your left, connect to this band
-        elif self.isSink():
-            indices =[source.block.index for source in pBand.emitters]
-            if len(indices) > 0 and min(indices) < self.block.index:
-                return pBand
-        return None
+        return self._connection.edge._pBand
 
     @property
     def negBandLink(self):
-        """ returns the negative band connection - if it exists. See posBand for
-        more details."""
-        nBand = self._connection.edge._nBand
-        # If you are a source snap and there is a sink snap to the left, connect to this band
-        if self.isSource():
-            indices = [sink.block.index for sink in nBand.collectors]
-            if len(indices) > 0 and min(indices) <= self.block.index:
-                return nBand
-        # if you are a sink snap and there is a source snap to the right, connect to this band
-        elif self.isSink(): 
-            indices = [source.block.index for source in nBand.emitters]
-            if len(indices) > 0 and max(indices) >= self.block.index:
-                return nBand
+        """ returns the negative band connection ...which for fabrik does not exist."""
         return None
 
     @property
