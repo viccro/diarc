@@ -2,7 +2,7 @@
 # Usage:
 # ./run.py topology_plot data/v5.xml
 
-import sys, os
+import sys
 sys.dont_write_bytecode = True
 import inspect
 import logging
