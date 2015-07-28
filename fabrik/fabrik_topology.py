@@ -271,7 +271,7 @@ class FabrikBand(Band):
             return list()
         return [s.snap for s in self.edge.sinks]
 
-class FabrikSnap(Snap):
+class FabrikSnap(object):
     """ Visual Representation of a Source or Sink.
         Snaps are layedout horizontally inside of an Emitter or Collector of a Block.
         A Snap provides a mapping between a Source/Sink and one or two Bands associated with a single Edge.
@@ -280,12 +280,168 @@ class FabrikSnap(Snap):
     """
 
     def __init__(self,connection):
-        super(FabrikSnap, self).__init__(connection)
+        self._connection = typecheck(connection,FabrikConnection,"connection")
+        self._order = None
+
+    def snapkey(self):
+        """ generates the snapkey for this snap """
+        return gen_snapkey(self.block.index, "collector" if self.isSink() else "emitter", self._order)
+
+    def _release(self):
+        """ This should only be called by a Connection.release() """
+        logging.debug("releasing snap %r"%self)
+        # the connection should 
+        logging.debug("... removing reference to connection")
+        self._connection = None
 
     def isUsed(self):
         return True
 
-class Producer(Source):
+    @property
+    def posBandLink(self):
+        return self._connection.edge._pBand
+
+    @property
+    def negBandLink(self):
+        return self._connection.edge._pBand
+
+    @property
+    def block(self):
+        return self._connection.vertex.block
+
+    @property
+    def connection(self):
+        return self._connection
+
+    @property
+    def bandLinks(self):
+        return filter(lambda x: isinstance(x,Band), [self.posBandLink,self.negBandLink])
+
+    def isSource(self):
+        return isinstance(self._connection,Source)
+
+    def isSink(self):
+        return isinstance(self._connection,Sink)
+
+    def isLinked(self):
+        """ returns true if this snap is connected to at least one sink, else false. """
+        return True if self.posBandLink or self.negBandLink else False
+
+    def isUsed(self):
+        """ returns true if topology.hide_disconnected_snaps is True and isLinked is True, 
+        or if topology.hide_disconnected_snaps is false. Otherwise, return true.
+        """
+        if self._connection._topology.hide_disconnected_snaps:
+            return True if self.isLinked() else False
+        else:
+            return True
+
+    @property
+    def leftSnap(self):
+        """ Returns the snap directly to the left of this snap within either an 
+        emitter or collector. Returns None if this is leftmost snap. 
+        """
+        snaps = self.block.emitter if self.isSource() else self.block.collector
+        if isinstance(self._order,int) and self._order > min(snaps.keys()):
+            return snaps[max([s for s in snaps.keys() if s < self._order])]
+        else:
+            return None
+
+    @property
+    def rightSnap(self):
+        """ Returns the snap directly to the right of this snap within either 
+        an emitter or collector. Returns None if this is rightmost snap.
+        """
+        snaps = self.block.emitter if self.isSource() else self.block.collector
+        if isinstance(self._order,int) and self._order < max(snaps.keys()):
+            return snaps[min([s for s in snaps.keys() if s > self._order])]
+
+
+class FabrikConnection(object):
+    """ A base class for connecting a vertex to an edge, but without specifing 
+	the nature of the connection (input or output). Rather then using this 
+    	class directly, Source or Sink objects should be used.
+    """
+    def __init__(self,topology,vertex,edge):
+        self._topology = typecheck(topology,Topology,"topology")
+        self._vertex = typecheck(vertex,Vertex,"vertex")
+        self._edge = typecheck(edge,Edge,"edge")
+        if (not isinstance(self,FabrikSource)) and (not isinstance(self,FabrikSink)):
+            raise Exception("Do not create connections directly! Use Source or Sink")
+        self._snap = FabrikSnap(self)
+
+    def release(self):
+        """ Removes this connection between a vertex and an edge from the topology.
+        This does NOT release either the vertex or the edge objects, it simply
+	removes this particular reference to them. 
+        """
+        logging.debug("... releasing associated snap")
+        # Release and remove the reference to your snap
+        self._snap._release()
+        self._snap = None
+        logging.debug("... deleting pointer to vertex and edge")
+        # Remove references to vertex and edge
+        self._vertex = None
+        self._edge = None
+	
+    @property
+    def snap(self):
+        return self._snap
+
+    @property
+    def edge(self): 
+        return self._edge
+
+    @property
+    def vertex(self): 
+        return self._vertex
+
+    @property
+    def block(self):
+        return self.vertex.block	
+
+class FabrikSource(FabrikConnection):
+    """ A logical connection from a Vertex to an Edge. Graphically represented 
+    by a Snap object.
+    """
+    def __init__(self,topology,vertex,edge):
+        super(FabrikSource,self).__init__(topology,vertex,edge)
+        # Check to make sure there is not already a source going from this vertex to this edge
+        for source in vertex.sources + edge.sources:
+            if vertex == source.vertex and edge == source.edge:
+                raise Exception("Duplicate FabrkSource!")
+        self._topology._sources.append(self)
+
+    def release(self):
+        logging.debug("Releasing FabrikSource %r"%self)
+        super(FabrikSource,self).release()
+        # Remove yourself from the topology
+        logging.debug("... removing from topology")
+        self._topology._sources.remove(self)
+        self._topology = None
+
+class FabrikSink(FabrikConnection):
+    """ A logical connection from an Edge to a Vertex. Graphically represented
+    by a Snap object. 
+    """
+    def __init__(self,topology,vertex,edge):
+        super(FabrikSink,self).__init__(topology,vertex,edge)
+        # Check to make sure there is not already a sink going from this edge to this vertex
+        for sink in vertex.sinks + edge.sinks:
+            if vertex == sink.vertex and edge == sink.edge:
+                raise Exception("Duplicate FabrikSink!")
+        print "WUB"
+        self._topology._sinks.append(self)
+
+    def release(self):
+        logging.debug("Releasing FabrikSink %r"%self)
+        super(FabrikSink,self).release()
+        # Remove youself from the topology
+        logging.debug("... removing from topology")
+        self._topology._sinks.remove(self)
+        self._topology = None	
+
+class Producer(FabrikSource):
     def __init__(self,fg,node,exchange,routingKeys = None):
         typecheck(fg,FabrikGraph,"fg")
         typecheck(node,Node,"node") 
@@ -311,7 +467,7 @@ class Producer(Source):
         # NOTE: See note on Node class about why this MUST be a property.
         return self.vertex
 
-class Consumer(Sink):
+class Consumer(FabrikSink):
     def __init__(self,fg,node,exchange, routingKeys = None):
         typecheck(fg,FabrikGraph,"fg")
         typecheck(node,Node,"node")
