@@ -75,9 +75,6 @@ def fabrikview(args=None):
 
         view.activateWindow()
         view.raise_()
-        thing = python_qt_binding.QtGui.QPixmap.grabWidget(view)
-        if thing.save("/Users/206790/Projects/diarc/Screenshot.jpg", 'jpg'):
-            print "Saved image:",thing.size().height(), thing.size().width()
         sys.exit(app.exec_())
 
 if __name__=="__main__":

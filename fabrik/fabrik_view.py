@@ -488,12 +488,39 @@ class FabrikBandItem(qt_view.BandItem):
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
 
+class PrintButtonWidget(QGraphicsWidget):
+    def __init__(self, layoutmanager):
+        super(PrintButtonWidget, self).__init__(parent=None)
+        self._layoutmanager = layoutmanager
+        self.setZValue(10)
+        #         self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding))
+        self.h = 100
+        self.w = 100
+        self.setPreferredHeight(self.h)
+        self.setMinimumHeight(self.h)
+        self.setPreferredWidth(self.w)
+        self.setMinimumWidth(self.w)
+        
+    def mousePressEvent(self, event):
+        print "HE CLICKED IT"
+        thing = QPixmap.grabWidget(self._layoutmanager._view)
+        if thing.save("test.jpg","jpg"):
+            print "saved image"
+                
+    def paint(self, painter, option, widget):
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        brush.setColor(QColor("red"))
+        painter.fillRect(self.rect(),brush)
+        print "painting button"
+
 class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def __init__(self, view):
         super(FabrikLayoutManagerWidget, self).__init__(view)
         self._hook_items = TypedDict(str,HookItem)
         self._flow_items = TypedDict(str,FlowItem)  
         log.debug("Initialized Fabrik Layout Manager")
+        self.print_button = PrintButtonWidget(self)
 
     def add_block_item(self, index):
         log.debug("... Adding FabrikBlockItem %d"%index)
@@ -635,6 +662,9 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         l = QGraphicsAnchorLayout()
         l.setSpacing(0.0)
         self.setLayout(l)
+
+        self.layout().addAnchor(self.print_button, Qt.AnchorTop, self.layout(), Qt.AnchorTop)
+        self.layout().addAnchor(self.print_button, Qt.AnchorRight, self.layout(), Qt.AnchorRight)
 
         # Anchor BandStack to Layout, and BlockContainer to BandStack
         self.layout().addAnchor(self.block_container, Qt.AnchorTop, self.layout(), Qt.AnchorTop)
