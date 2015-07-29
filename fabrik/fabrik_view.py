@@ -281,7 +281,7 @@ class FabrikView(QGraphicsView, View):
     __set_flow_item_settings_signal = Signal(str)
     __set_flow_item_attributes_signal = Signal(str, qt_view.BandItemAttributes)
     
-    def __init__(self):
+    def __init__(self, filename):
         super(FabrikView, self).__init__(None)
         View.__init__(self)
 
@@ -293,7 +293,7 @@ class FabrikView(QGraphicsView, View):
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         
         # Add the LayoutManagerWidget to the scene
-        self.layout_manager = FabrikLayoutManagerWidget(self)
+        self.layout_manager = FabrikLayoutManagerWidget(self, filename)
         self.scene().addItem(self.layout_manager)
 
         # Hook up the signals and slots
@@ -489,7 +489,7 @@ class FabrikBandItem(qt_view.BandItem):
         QToolTip.hideText()
 
 class PrintButtonWidget(QGraphicsWidget):
-    def __init__(self, layoutmanager):
+    def __init__(self, layoutmanager, filename):
         super(PrintButtonWidget, self).__init__(parent=None)
         self._layoutmanager = layoutmanager
         self.setZValue(10)
@@ -500,27 +500,26 @@ class PrintButtonWidget(QGraphicsWidget):
         self.setMinimumHeight(self.h)
         self.setPreferredWidth(self.w)
         self.setMinimumWidth(self.w)
+        self.filename = filename
         
     def mousePressEvent(self, event):
-        print "HE CLICKED IT"
-        thing = QPixmap.grabWidget(self._layoutmanager._view)
-        if thing.save("test.jpg","jpg"):
-            print "saved image"
+        thing = QPixmap.grabWidget(self._layoutmanager._view)        
+        if thing.save(self.filename,'png',100):
+            print "Saved image to ", self.filename
                 
     def paint(self, painter, option, widget):
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         brush.setColor(QColor("red"))
         painter.fillRect(self.rect(),brush)
-        print "painting button"
 
 class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
-    def __init__(self, view):
+    def __init__(self, view, filename):
         super(FabrikLayoutManagerWidget, self).__init__(view)
         self._hook_items = TypedDict(str,HookItem)
         self._flow_items = TypedDict(str,FlowItem)  
         log.debug("Initialized Fabrik Layout Manager")
-        self.print_button = PrintButtonWidget(self)
+        self.print_button = PrintButtonWidget(self, filename)
 
     def add_block_item(self, index):
         log.debug("... Adding FabrikBlockItem %d"%index)
@@ -693,18 +692,9 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
             item.link()
 
         log.debug("*** Finished Linking ***\n")
-#        take_screenshot(self.layout())
         sys.stdout.flush()
-
-#def take_screenshot(widget):
-#    filename = 'Screenshot.jpg'
-#    p = QPixmap.grabWindow(widget)#.winId())
-#    p.save(filename, 'jpg')
-
 
 class DuplicateItemExistsError(Exception):
     pass
 
 
-app = python_qt_binding.QtGui.QApplication(sys.argv)
-view = FabrikView()

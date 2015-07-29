@@ -353,20 +353,45 @@ class FabrikAdapter(BaseAdapter):
             emitters.sort(lambda x,y: x.block.index - y.block.index)
             collectors.sort(lambda x,y: x.block.index - y.block.index)
 
+            print "\n", [e.snapkey() for e in emitters]
+            print [e.snapkey() for e in collectors]
+
             left_snap = None
             right_snap = None
             try:
-                if band.isPositive:
-                    left_snap = emitters[0]
-                    right_snap = collectors[-1]
-                else:
-                    left_snap = collectors[0]
-                    right_snap = emitters[-1]
-            except:
+                left_snap_choices = dict()
+                right_snap_choices = dict()
+
+                if len(emitters) > 0:
+                    left_snap_emit = emitters[0]
+                    right_snap_emit = emitters[-1]
+                    left_snap_choices[ parse_snapkey(left_snap_emit.snapkey())[0]] = left_snap_emit
+                    right_snap_choices[ parse_snapkey(right_snap_emit.snapkey())[0]] = right_snap_emit
+
+                if len(collectors) > 0:
+                    right_snap_coll = collectors[-1]
+                    left_snap_coll = collectors[0]
+                    left_snap_choices[ parse_snapkey(left_snap_coll.snapkey())[0]] = left_snap_coll
+                    right_snap_choices[ parse_snapkey(right_snap_coll.snapkey())[0]] = right_snap_coll
+                
+                print left_snap_choices
+                print right_snap_choices
+                left_min_index = min( left_snap_choices.keys(), key=lambda a: a if a is not None else float("Inf"))
+                right_max_index = max(right_snap_choices.keys())
+
+                left_snap = left_snap_choices[left_min_index]
+                right_snap = right_snap_choices[right_max_index]
+
+            except Exception as e:
+                print e
                 pass
 
             left_snapkey = left_snap.snapkey() if left_snap is not None else None
             right_snapkey = right_snap.snapkey() if right_snap is not None else None
+
+            print "Band: ", band.edge.name
+            print "Left key", left_snapkey
+            print "Right key", right_snapkey
 
             #Also compute leftmost and rightmost hooks:
             _hooks = band.hooks
@@ -378,7 +403,10 @@ class FabrikAdapter(BaseAdapter):
             if latches:
                 left_hook_latch = min(sorted(latches))
                 right_hook_latch = max(sorted(latches))
-    
+
+                print "Left hook", left_hook_latch
+                print "Right hook", right_hook_latch
+
                 left_hook_label = latches[left_hook_latch] if left_hook_latch is not None else None
                 right_hook_label = latches[right_hook_latch] if right_hook_latch is not None else None
     
@@ -406,6 +434,8 @@ class FabrikAdapter(BaseAdapter):
                     left_most_item = None
                     right_most_item = None
 
+            print "\tLeft item:", left_most_item
+            print "\tRight item:", right_most_item
 
             self._view.set_band_item_settings(altitude, band.rank, top_alt, bot_alt, left_most_item, right_most_item )
 

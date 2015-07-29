@@ -246,6 +246,22 @@ class FabrikBand(Band):
     def __str__(self):
         return "<FabrikBand item: " + self._edge.name + " (altitude " + str(self.altitude) + ")>"
 
+    @property
+    def collectors(self):
+        """ returns list of sink snaps that reach this band """
+        if self.edge.sinks:
+            return [s.snap for s in self.edge.sinks]
+        else:
+            return list()
+
+    @property
+    def emitters(self):
+        """ returns list of sink snaps that reach this band """
+        if self.edge.sources:
+            return [s.snap for s in self.edge.sources]
+        else:
+            return list()
+
 class Producer(Source):
     def __init__(self,fg,node,exchange,routingKeys = None):
         typecheck(fg,FabrikGraph,"fg")

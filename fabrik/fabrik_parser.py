@@ -60,7 +60,6 @@ def extract_features(path, filename, fabrik):
         pub_options = [config.get('Topology', opt) for opt in config.options('Topology') if opt.startswith('publish_')]
     except:
         log.debug( "Invalid file in specified path: "+ filename)
-        print "yup"
         return
 #        exit(-1)
 

@@ -64,15 +64,13 @@ def fabrikview(args=None):
     from fabrik import fabrik_view
     from fabrik import fabrik_adapter
     from fabrik import fabrik_parser
-    if args.path:
+    if args.path and args.filename:
         topology = fabrik_parser.build_topology(args.path)
         app = python_qt_binding.QtGui.QApplication([])
-        view = fabrik_view.FabrikView()
+        view = fabrik_view.FabrikView(args.filename)
         adapter = fabrik_adapter.FabrikAdapter(topology, view)
         adapter.flow_arrangement_enforcer()
         adapter._update_view()
-
-
         view.activateWindow()
         view.raise_()
         sys.exit(app.exec_())
@@ -90,6 +88,9 @@ if __name__=="__main__":
 
     pathHelp = "path to the directory containing .ini.j2 configuration files"
     parser.add_argument('--path', help=pathHelp)
+
+    fileHelp = "name of the file where the png of the diagram will be saved"
+    parser.add_argument('--filename', help = fileHelp)
     '''
     ec2Help = "ec2 id"
     parser.add_argument('--ec2_id', help=ec2Help)
