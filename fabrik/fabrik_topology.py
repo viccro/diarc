@@ -215,7 +215,7 @@ class Exchange(FabrikEdge):
     @property
     def transfers(self):
         """Returns an unordered list of outgoing transfers from this exchange"""
-        return filter(lambda x: x.origin == self, self._topology._transfers)
+        return filter(lambda x: x.origin == self or x.dest == self, self._topology._transfers)
 
     @property
     def producers(self):
