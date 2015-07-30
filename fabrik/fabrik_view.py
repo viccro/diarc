@@ -3,6 +3,8 @@ from qt_view import SpacerContainer
 import logging
 import hooklabel
 import flowlabel
+from diarc import snapkey
+
 from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene, QGraphicsAnchorLayout
 from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon, QToolTip, QPixmap
 from python_qt_binding.QtCore import Qt, QPoint
@@ -38,7 +40,11 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         self.setAcceptHoverEvents(True)
 
     def __str__(self):
-        return "<HookItem ", self._hook_label, ">"
+        return "<HookItem ", self.hooklabel, ">"
+
+    @property
+    def hooklabel(self):
+        return self._hook_label
 
     @property
     def itemA(self):
@@ -423,7 +429,7 @@ class FabrikBlockItem(qt_view.BlockItem):
         super(FabrikBlockItem, self).__init__(parent, block_index)
 
     def __str__(self):
-        return "<FabrikBlockItem ", self.node.index, ">"
+        return "<FabrikBlockItem " + str(self.label) + ">"
 
     def paint(self,painter,option,widget):
         """Overwrites BlockItem.paint so that we can fill in the block rectangles"""
@@ -558,27 +564,33 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         item.top_band = self._band_items[top_band_alt] if top_band_alt is not None else None
         item.bot_band = self._band_items[bot_band_alt] if bot_band_alt is not None else None
 #TODO: fix band widths
-        #If there's only one item on the band, make it wider if possible
-#        if (left_most_item == right_most_item) and (left_most_item != None):
-#            if left_most_item > 0:
-#                left_most_item -= 1
-#            if right_most_item < max(sorted(blocks)):
-#                right_most_item +=1
 
         if leftmost_object_label == '':
             item.left_most_obj = self.bandStack
         else:
             if ("e" in leftmost_object_label) or ("c" in leftmost_object_label):
                 item.left_most_obj = self._snap_items[str(leftmost_object_label)]
+                left_index = snapkey.parse_snapkey(leftmost_object_label)[0]
             else: # Not snap, but hook
                 item.left_most_obj = self._hook_items[str(leftmost_object_label)]
+                left_index = hooklabel.parse_hooklabel(leftmost_object_label)[2]
+
         if rightmost_object_label == '':
             item.right_most_obj = self.bandStack
         else:
             if ("e" in rightmost_object_label) or ("c" in rightmost_object_label):
                 item.right_most_obj = self._snap_items[str(rightmost_object_label)]
+                right_index = snapkey.parse_snapkey(rightmost_object_label)[0]
             else: #Not snap, but hook
                 item.right_most_obj = self._hook_items[str(rightmost_object_label)]
+                right_index = hooklabel.parse_hooklabel(rightmost_object_label)[2]
+        if right_index == left_index:
+            #Make sure it won't stick weirdly out to the left
+            if left_index > 0:
+                item.left_most_item =  self._block_items[left_index - 1]
+            #Make sure it doesn't stick out weirdly to the right
+            if right_index < max(self._block_items.keys()):
+                item.right_most_item = self._block_items[right_index + 1]
 
     def add_hook_item(self, hook_label):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
@@ -594,13 +606,12 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
         log.debug("... Removing HookItem %s"%hook_label)
-        self._hook_items[hook_label].release() #TODO
+        self._hook_items[hook_label].release() 
         self._hook_items.pop(hook_label) 
 
     def set_hook_item_settings(self, hook_label):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
-        #TODO: what settings?
         return
 
     def set_hook_item_attributes(self, hook_label, attributes):
@@ -630,13 +641,12 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
         flow_label = str(flow_label)
         log.debug("... Removing FlowItem %s"%flow_label)
-        self._flow_items[flow_label].release() #TODO
+        self._flow_items[flow_label].release() 
         self._flow_items.pop(flow_label) 
 
     def set_flow_item_settings(self, flow_label):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
         flow_label = str(flow_label)
-        #TODO: what settings?
 
     def set_flow_item_attributes(self, flow_label, attributes):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface

@@ -382,8 +382,8 @@ class BlockSpacer(SpacerContainer.Spacer):
         self._adapter = parent.parent.adapter()
         self.dragOver = False
         self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding,QSizePolicy.Preferred))
-        self.setPreferredWidth(50)
-        self.setMinimumWidth(50)
+        self.setPreferredWidth(20)
+        self.setMinimumWidth(20)
         self.setAcceptDrops(True)
 
     @property
@@ -600,7 +600,7 @@ class BlockItem(SpacerContainer.Item, QtBlockItemAttributes):
             self.blockItem = parent
             self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
             # The width of the block
-            self.set_width(20)
+            self.set_width(5)
             self.setAcceptHoverEvents(True)
 
         def set_width(self, width):
