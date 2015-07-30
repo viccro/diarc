@@ -457,7 +457,7 @@ class FabrikSnapItem(qt_view.SnapItem):
         self.setMaximumHeight(200)
 
     def __str__(self):
-        return "<FabrikSnapItem ", self.snapkey, ">"
+        return "<FabrikSnapItem "+ self.snapkey+ ">"
     
     def hoverEnterEvent(self, event):
         QToolTip.showText(event.screenPos(),self.label)
@@ -465,12 +465,16 @@ class FabrikSnapItem(qt_view.SnapItem):
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
 
+    @property
+    def snapkey(self):
+        return self._snapkey
+
 class FabrikBandItem(qt_view.BandItem):
     def __init__(self, parent, altitude, rank):
         super(FabrikBandItem, self).__init__(parent, altitude, rank)
 
     def __str__(self):
-        return "<FabrikBandItem ", self.altitude, ">"
+        return "<FabrikBandItem "+str(self.altitude)+ ">"
 
     def link(self):
         sys.stdout.flush()
@@ -584,13 +588,14 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
             else: #Not snap, but hook
                 item.right_most_obj = self._hook_items[str(rightmost_object_label)]
                 right_index = hooklabel.parse_hooklabel(rightmost_object_label)[2]
+
         if right_index == left_index:
             #Make sure it won't stick weirdly out to the left
             if left_index > 0:
-                item.left_most_item =  self._block_items[left_index - 1]
+                item.left_most_obj =  self._block_items[left_index - 1]
             #Make sure it doesn't stick out weirdly to the right
             if right_index < max(self._block_items.keys()):
-                item.right_most_item = self._block_items[right_index + 1]
+                item.right_most_obj = self._block_items[right_index + 1]
 
     def add_hook_item(self, hook_label):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
