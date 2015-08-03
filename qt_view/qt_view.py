@@ -831,10 +831,10 @@ class SnapItem(SpacerContainer.Item, QtSnapItemAttributes):
 
         # Qt Properties
         self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred))
-        self.set_width(20)
+        self.set_width(15)
         # These values dictate the block Container Height
-        self.setPreferredHeight(150)
-        self.setMaximumHeight(150)
+        self.setPreferredHeight(180)
+        self.setMaximumHeight(180)
 
         #Create two SnapBandLinks - one for each band
         _is_source = True if container_name == "emitter" else False

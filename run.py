@@ -9,6 +9,7 @@ import logging
 import argparse
 
 def asciiview(args=None):
+    '''Creates a standard diarc topology and displays it in ascii'''
     from diarc import parser
     from ascii_view import ascii_view
     from diarc import base_adapter
@@ -18,12 +19,13 @@ def asciiview(args=None):
     adapter._update_view()
 
 def qtview(args=None):
+    '''Creates a standard diarc topology and displays it in QT'''
     try:
         import python_qt_binding.QtGui
-    except Exception as e:
+    except Exception as exception:
         print "Error: python_qt_binding not installed."
         print "Please install using `sudo pip install python_qt_binding`"
-        print str(e)
+        print str(exception)
         exit(-1)
     from diarc import parser
     from qt_view import qt_view
@@ -38,6 +40,7 @@ def qtview(args=None):
     sys.exit(app.exec_())
 
 def rosview(args=None):
+    '''Creates a ROS specific graph and displays it in QT'''
     try:
         import python_qt_binding.QtGui
     except:
@@ -55,6 +58,7 @@ def rosview(args=None):
     sys.exit(app.exec_())
 
 def fabrikview(args=None):
+    '''Creates a Fabrik specific graph and displays it in QT'''
     try:
         import python_qt_binding.QtGui
     except:
@@ -65,7 +69,7 @@ def fabrikview(args=None):
     from fabrik import fabrik_adapter
     from fabrik import fabrik_parser
     if args.path and args.filename:
-        topology = fabrik_parser.build_topology(args.path)
+        topology = fabrik_parser.build_topology_from_directory(args.path)
         app = python_qt_binding.QtGui.QApplication([])
         view = fabrik_view.FabrikView(args.filename)
         adapter = fabrik_adapter.FabrikAdapter(topology, view)
@@ -75,36 +79,31 @@ def fabrikview(args=None):
         view.raise_()
         sys.exit(app.exec_())
 
-if __name__=="__main__":
-    available_views = dict(inspect.getmembers(sys.modules[__name__],inspect.isfunction))
-    
+if __name__ == "__main__":
+    available_views = dict(inspect.getmembers(sys.modules[__name__], inspect.isfunction))
+
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger('main')
 
-    parser = argparse.ArgumentParser()
+    arg_parser = argparse.ArgumentParser()
 
     viewNameHelp = "Views available:" + str(available_views.keys())
-    parser.add_argument('viewName', help=viewNameHelp)
+    arg_parser.add_argument('viewName', help=viewNameHelp)
 
     pathHelp = "path to the directory containing .ini.j2 configuration files"
-    parser.add_argument('--path', help=pathHelp)
+    arg_parser.add_argument('--path', help=pathHelp)
 
     fileHelp = "name of the file where the png of the diagram will be saved"
-    parser.add_argument('--filename', help = fileHelp)
+    arg_parser.add_argument('--filename', help=fileHelp)
     '''
     ec2Help = "ec2 id"
     parser.add_argument('--ec2_id', help=ec2Help)
-    
+
     regionHelp = "region name"
     parser.add_argument('--region', help=regionHelp)
 
     silverHelp = "Array of silver products"
     parser.add_argument('--silver_products', help=silverHelp)
     '''
-    args = parser.parse_args()
-    
-#    try:
+    args = arg_parser.parse_args()
     available_views[args.viewName](args)
-    #except Exception as e:
-        #print e
-        #print "'./run.py -h' for help"

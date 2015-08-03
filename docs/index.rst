@@ -9,8 +9,10 @@ DiArc Documentation!
 .. toctree::
    :hidden:
 
+   diarc
    terminology  
    topology
+   fabrik-topology
 ..   :maxdepth: 2
 
 

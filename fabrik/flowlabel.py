@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" flowlabels are abbreviations that can be used to identify a hook. Flows do
+""" flowlabels are abbreviations that can be used to identify a flow. Flows do
     not have a single unique attribute, which makes them difficult to identify.
     flows solve that problem.
 
@@ -26,11 +26,11 @@
 import re
 def parse_flowlabel(flowlabel):
     """ Parses a flowlabel into a tuple """
-    m = re.findall("(^\d+)(_)(\d+$)",flowlabel)
-    if len(m) == 0:
+    result = re.findall("(^\d+)(_)(\d+$)", flowlabel)
+    if len(result) == 0:
         raise Exception("Invalid flowlabel %s"%flowlabel)
-    return (int(m[0][0]), int(m[0][2]))
+    return (int(result[0][0]), int(result[0][2]))
 
-def gen_flowlabel(origin_index,  destination_index):
+def gen_flowlabel(origin_index, destination_index):
     """ generate a flowlabel """
     return "%d_%d"%(origin_index, destination_index)

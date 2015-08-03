@@ -5,8 +5,9 @@ import hooklabel
 import flowlabel
 from diarc import snapkey
 
-from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QGraphicsScene, QGraphicsAnchorLayout
-from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon, QToolTip, QPixmap
+from python_qt_binding.QtGui import QPen, QBrush, QGraphicsView, QToolTip
+from python_qt_binding.QtGui import QGraphicsScene, QGraphicsAnchorLayout, QPixmap
+from python_qt_binding.QtGui import QSizePolicy, QColor, QGraphicsWidget, QPolygon
 from python_qt_binding.QtCore import Qt, QPoint
 from python_qt_binding.QtCore import pyqtSignal as Signal
 import python_qt_binding.QtGui
@@ -16,7 +17,7 @@ from diarc.util import TypedDict, typecheck
 
 log = logging.getLogger('fabrik.fabrik_view')
 
-class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
+class HookItem(QGraphicsWidget, qt_view.BandItemAttributes):
     def __init__(self, parent, hook_label):
         super(HookItem, self).__init__(parent)
         qt_view.BandItemAttributes.__init__(self)
@@ -24,7 +25,8 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         self._layout_manager = typecheck(parent, FabrikLayoutManagerWidget, "parent")
         self._view = parent.view()
         self._adapter = parent.adapter()
-        self.originAltitude, self.destAltitude, self.latchIndex = hooklabel.parse_hooklabel(self._hook_label)
+        self.originAltitude, self.destAltitude, self.latchIndex = \
+                                             hooklabel.parse_hooklabel(self._hook_label)
 
         #Deal with the parsed things.
         self.origin_band_item = self._layout_manager.get_band_item(self.originAltitude)
@@ -35,8 +37,8 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
 
         #Qt Properties
         self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
-        self.setPreferredHeight(20)
-        self.setMinimumHeight(20)
+        self.setPreferredHeight(5)
+        self.setMinimumHeight(5)
         self.setAcceptHoverEvents(True)
 
     def __str__(self):
@@ -53,7 +55,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
     @property
     def itemB(self):
         return self.dest_band_item
-    
+
     def bottomBand(self):
         if self.itemA.altitude < self.itemB.altitude:
             return self.itemA
@@ -61,7 +63,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
 
     @property
     def rank(self):
-         return self._rank
+        return self._rank
     @rank.setter
     def rank(self, value):
         self._rank = value
@@ -94,7 +96,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         l.addAnchor(self, Qt.AnchorBottom, self.bottomBand(), Qt.AnchorTop)
         l.addAnchor(self, Qt.AnchorTop, self.topBand, Qt.AnchorBottom)
         l.addAnchor(self, Qt.AnchorLeft, self.latch, Qt.AnchorLeft)
-        l.addAnchor(self, Qt.AnchorRight, self.latch, Qt.AnchorRight)
+#        l.addAnchor(self, Qt.AnchorRight, self.latch, Qt.AnchorRight)
         self.bgcolor = self.itemA.bgcolor
         self.border_color = self.itemA.border_color
         self.label_color = self.itemA.label_color
@@ -104,7 +106,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         brush.setColor(self.bgcolor)
-        painter.fillRect(self.rect(),brush)
+        painter.fillRect(self.rect(), brush)
         #Paint border
         border_pen = QPen()
         border_pen.setBrush(self.border_color)
@@ -122,18 +124,20 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         brush.setColor(self.label_color)
         painter.setPen(Qt.NoPen)
         painter.setBrush(brush)
-        arrow = None 
+        arrow = None
 
-        if (self.topBand == self.dest_band_item):
+        if self.topBand == self.dest_band_item:
             # Draw pointing up
-            arrow = QPolygon([QPoint(0,arrow_height), QPoint(arrow_width,arrow_height), QPoint(arrow_width/2.0,0)])
-            arrow.translate(rect.x(),rect.y())
+            arrow = QPolygon([QPoint(0, arrow_height), QPoint(arrow_width, arrow_height),
+                              QPoint(arrow_width/2.0, 0)])
+            arrow.translate(self.rect().x()+arrow_margin, self.rect().y()+1)
         else:
             # Draw pointing down
-            arrow = QPolygon([QPoint(0,0), QPoint(arrow_width,0), QPoint(arrow_width/2.0,arrow_height)])
-            arrow.translate(rect.x(),rect.y())
-            #arrow.translate(rect.x()+arrow_margin,rect.y()+rect.height()-arrow_height-arrow_margin)
-#        painter.drawPolygon(arrow)
+            arrow = QPolygon([QPoint(0, 0), QPoint(arrow_width, 0),
+                              QPoint(arrow_width/2.0, arrow_height)])
+            arrow.translate(self.rect().x()+arrow_margin, 
+                            self.rect().y()+rect.height()-arrow_height)
+        painter.drawPolygon(arrow)
 
         #Label
         painter.setPen(self.label_color)
@@ -144,7 +148,7 @@ class HookItem(QGraphicsWidget,qt_view.BandItemAttributes):
         painter.drawText(-twidth-(rect.height()-twidth)/2, rect.width()-2, elided)
 
     def hoverEnterEvent(self, event):
-        QToolTip.showText(event.screenPos(),self.label)
+        QToolTip.showText(event.screenPos(), self.label)
 
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
@@ -159,12 +163,12 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         self._adapter = parent.adapter()
 
         self.origin_index, self.dest_index = flowlabel.parse_flowlabel(flow_label)
-    
+
         self.origin_node_item = self._layout_manager.get_block_item(self.origin_index)
         self.dest_node_item = self._layout_manager.get_block_item(self.dest_index)
 
         #Qt Properties
-        self.setContentsMargins(0,50,0,50)
+        self.setContentsMargins(0, 50, 0, 50)
         self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
         self.setPreferredHeight(20)
         self.setMinimumHeight(20)
@@ -183,7 +187,7 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
 
     @property
     def isMalformed(self):
-        return (self.dest.index < self.origin.index)
+        return self.dest.index < self.origin.index
 
     @property
     def flowlabel(self):
@@ -225,7 +229,7 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         brush.setColor(self.bgcolor)
-        painter.fillRect(self.rect(),brush)
+        painter.fillRect(self.rect(), brush)
         #Paint border
         border_pen = QPen()
         border_pen.setBrush(self.border_color)
@@ -245,15 +249,15 @@ class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
         painter.setBrush(brush)
 
     def hoverEnterEvent(self, event):
-        QToolTip.showText(event.screenPos(),self.label)
+        QToolTip.showText(event.screenPos(), self.label)
 
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
 
 class FabrikView(QGraphicsView, View):
-    """ This is a Qt based stand-alone widget that provides a visual rendering 
+    """ This is a Qt based stand-alone widget that provides a visual rendering
     of a Topology. It provides a window into a self contained GraphicsScene in
-    which we draw the topology. 
+    which we draw the topology.
     It also implements the View interface as a passthrough to the LayoutManager.
     """
     # Qt Signals. The following signals correspond to diarc.View() API calls that
@@ -286,7 +290,7 @@ class FabrikView(QGraphicsView, View):
     __remove_flow_item_signal = Signal(str)
     __set_flow_item_settings_signal = Signal(str)
     __set_flow_item_attributes_signal = Signal(str, qt_view.BandItemAttributes)
-    
+
     def __init__(self, filename):
         super(FabrikView, self).__init__(None)
         View.__init__(self)
@@ -297,7 +301,7 @@ class FabrikView(QGraphicsView, View):
 
         # Enable for debuging
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
-        
+
         # Add the LayoutManagerWidget to the scene
         self.layout_manager = FabrikLayoutManagerWidget(self, filename)
         self.scene().addItem(self.layout_manager)
@@ -319,18 +323,18 @@ class FabrikView(QGraphicsView, View):
         self.__remove_snap_item_signal.connect(self.layout_manager.remove_snap_item)
         self.__set_snap_item_settings_signal.connect(self.layout_manager.set_snap_item_settings)
         self.__set_snap_item_attributes_signal.connect(self.layout_manager.set_snap_item_attributes)
-        
+
         self.__add_hook_item_signal.connect(self.layout_manager.add_hook_item)
         self.__remove_hook_item_signal.connect(self.layout_manager.remove_hook_item)
         self.__set_hook_item_settings_signal.connect(self.layout_manager.set_hook_item_settings)
         self.__set_hook_item_attributes_signal.connect(self.layout_manager.set_hook_item_attributes)
-        
+
         self.__add_flow_item_signal.connect(self.layout_manager.add_flow_item)
         self.__remove_flow_item_signal.connect(self.layout_manager.remove_flow_item)
         self.__set_flow_item_settings_signal.connect(self.layout_manager.set_flow_item_settings)
         self.__set_flow_item_attributes_signal.connect(self.layout_manager.set_flow_item_attributes)
-        
-        self.resize(1024,768)
+
+        self.resize(1024, 768)
         self.show()
 
     def update_view(self):
@@ -395,7 +399,7 @@ class FabrikView(QGraphicsView, View):
         self.__remove_hook_item_signal.emit(hook_label)
 
     def set_hook_item_settings(self, hook_label):
-        self.__set_hook_item_settings_signal.emit(hook_label) #TODO - what settings?
+        self.__set_hook_item_settings_signal.emit(hook_label) 
 
     def set_hook_item_attributes(self, hook_label, attributes):
         self.__set_hook_item_attributes_signal.emit(hook_label, attributes)
@@ -410,7 +414,7 @@ class FabrikView(QGraphicsView, View):
         self.__remove_flow_item_signal.emit(flow_label)
 
     def set_flow_item_settings(self, flow_label):
-        self.__set_flow_item_settings_signal.emit(flow_label) #TODO - what settings?
+        self.__set_flow_item_settings_signal.emit(flow_label) 
 
     def set_flow_item_attributes(self, flow_label, attributes):
         self.__set_flow_item_attributes_signal.emit(flow_label, attributes)
@@ -427,6 +431,7 @@ class FabrikView(QGraphicsView, View):
 class FabrikBlockItem(qt_view.BlockItem):
     def __init__(self, parent, block_index):
         super(FabrikBlockItem, self).__init__(parent, block_index)
+        self.setAcceptHoverEvents(True)
 
     def __str__(self):
         return "<FabrikBlockItem " + str(self.label) + ">"
@@ -450,11 +455,13 @@ class FabrikBlockItem(qt_view.BlockItem):
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
 
+
 class FabrikSnapItem(qt_view.SnapItem):
     def __init__(self, parent, snapkey):
         super(FabrikSnapItem, self).__init__(parent, snapkey)
         self.setPreferredHeight(200)
         self.setMaximumHeight(200)
+        self.setAcceptHoverEvents(True)
 
     def __str__(self):
         return "<FabrikSnapItem "+ self.snapkey+ ">"
@@ -472,6 +479,7 @@ class FabrikSnapItem(qt_view.SnapItem):
 class FabrikBandItem(qt_view.BandItem):
     def __init__(self, parent, altitude, rank):
         super(FabrikBandItem, self).__init__(parent, altitude, rank)
+        self.setAcceptHoverEvents(True)
 
     def __str__(self):
         return "<FabrikBandItem "+str(self.altitude)+ ">"
@@ -567,7 +575,6 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         item.rank = rank
         item.top_band = self._band_items[top_band_alt] if top_band_alt is not None else None
         item.bot_band = self._band_items[bot_band_alt] if bot_band_alt is not None else None
-#TODO: fix band widths
 
         if leftmost_object_label == '':
             item.left_most_obj = self.bandStack
@@ -677,8 +684,8 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         l.setSpacing(0.0)
         self.setLayout(l)
 
-        self.layout().addAnchor(self.print_button, Qt.AnchorTop, self.layout(), Qt.AnchorTop)
-        self.layout().addAnchor(self.print_button, Qt.AnchorRight, self.layout(), Qt.AnchorRight)
+        self.layout().addAnchor(self.print_button, Qt.AnchorBottom, self.bandStack, Qt.AnchorTop)
+        self.layout().addAnchor(self.print_button, Qt.AnchorRight, self.bandStack, Qt.AnchorRight)
 
         # Anchor BandStack to Layout, and BlockContainer to BandStack
         self.layout().addAnchor(self.block_container, Qt.AnchorTop, self.layout(), Qt.AnchorTop)

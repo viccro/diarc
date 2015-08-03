@@ -16,21 +16,23 @@
     not have a single unique attribute, which makes them difficult to identify.
     hooklabels solve that problem.
 
-    Hooklabels have 2 parts:
+    Hooklabels have 3 parts:
         origin band altitude
         destination band altitude
+        latch index
 
     Example:
-        hooklabel 1_2 means the hook from the band at altitude 1 to altitude 2
+        hooklabel 1_2_3 means the hook from the band at altitude 1 to altitude 2,
+        and its latch is at index 3.
 """
 import re
 def parse_hooklabel(hooklabel):
     """ Parses a snapkey into a 3-tuple """
-    m = re.findall("(^-?\d+)(_)(-?\d+)(_)(\d+$)",hooklabel)
-    if len(m) == 0:
+    result = re.findall("(^-?\d+)(_)(-?\d+)(_)(\d+$)", hooklabel)
+    if len(result) == 0:
         raise Exception("Invalid hooklabel %s"%hooklabel)
-    return (int(m[0][0]), int(m[0][2]), int(m[0][4]))
+    return (int(result[0][0]), int(result[0][2]), int(result[0][4]))
 
-def gen_hooklabel(origin_alt,  destination_alt, latch_index):
+def gen_hooklabel(origin_alt, destination_alt, latch_index):
     """ generate a snapkey """
     return "%d_%d_%d"%(origin_alt, destination_alt, latch_index)
