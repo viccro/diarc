@@ -11,6 +11,7 @@ from diarc.util import typecheck
 from fabrik_topology import FabrikGraph, ServiceBuddy, Queue, Exchange, Producer
 from fabrik_topology import Consumer, Transfer, Feed
 import logging
+import requests
 # Parses fabrik .ini.j2 files and returns a FabrikGraph object
 #
 # Assumed format of Topology sections:
@@ -32,6 +33,70 @@ import logging
 #       "bindings": ...
 
 log = logging.getLogger('fabrik.fabrik_parser')
+
+def build_topology_from_api(route_to_api, username, password):
+    fabrik = FabrikGraph()
+
+    #query API
+    try:
+        queue_response = query_api(route_to_api,"queues", username, password)
+        exchange_response = query_api(route_to_api, "exchanges", username, password)
+        binding_response = query_api(route_to_api, "bindings", username, password)
+    except Exception as ex:
+        print ex
+        print "Your http requests failed. Maybe you should check on that."
+    
+    #parse responses
+    queue_parse(fabrik, json.loads(queue_response.text))
+    exchange_parse(fabrik, json.loads(exchange_response.text))
+    binding_parse(fabrik, json.loads(binding_response.text))
+    return fabrik
+    
+def query_api(route_to_api, object_name, username, password):
+    response = requests.get(route_to_api+object_name, auth=(username,password))
+    return response
+
+def queue_parse(fabrik, json):
+    for q in json:
+        queue = add_queue(fabrik, str(q['name']))
+        queue.location = q['vhost']
+
+def exchange_parse(fabrik, json):
+    for ex in json:
+        exchange = add_exchange(fabrik, ex['name'])
+
+def binding_parse(fabrik, json):
+    for bind in json:
+        if bind['destination_type'] == 'exchange' and bind['source'] != '':
+            try:
+                queue = fabrik.nodes[str(bind['source'])]
+            except KeyError as e:
+                queue = add_queue(fabrik, str(bind['source']))
+                queue.location = bind['vhost']
+            try:
+                exchange = fabrik.exchanges[bind['destination']]
+            except KeyError as e:
+                exchange = add_exchange(fabrik, bind['destination']) 
+            try:
+                binding = Consumer(fabrik, queue, exchange) 
+            except Exception as e:
+                print "Duplicate Sink error"
+        elif bind['destination_type'] == 'queue':
+            try:
+                queue = fabrik.nodes[str(bind['destination'])]
+            except KeyError as e:
+                print e
+                queue = add_queue(fabrik, str(bind['destination']))
+                queue.location = bind['vhost']
+            try:
+                exchange = fabrik.exchanges[bind['source']]
+            except KeyError as e:
+                exchange = add_exchange(fabrik, bind['source']) 
+            try:
+                binding = Producer(fabrik, queue, exchange) 
+            except Exception as e:
+                print "Duplicate Source error"
+        log.debug("Added binding: "+str(binding))
 
 def get_files(path):
     '''Takes a directory path and returns a list of .ini.j2 files in that directory'''

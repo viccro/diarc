@@ -298,7 +298,8 @@ class Sink(Connection):
         # Check to make sure there is not already a sink going from this edge to this vertex
         for sink in vertex.sinks + edge.sinks:
             if vertex == sink.vertex and edge == sink.edge:
-                raise Exception("Duplicate Sink!")
+                if vertex.location == sink.vertex.location:
+                    raise Exception("Duplicate Sink!")
         self._topology._sinks.append(self)
 
     def release(self):

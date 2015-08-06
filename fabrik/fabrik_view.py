@@ -1,3 +1,16 @@
+'''
+fabrik_view.py contains QT specific code to draw the Fabrik diagram.
+Classes:
+    HookItem
+    FlowItem
+    FabrikView
+    FabrikSnapItem
+    FabrikBandItem
+    FabrikBlockItem
+    PrintButtonWidget
+    FabrikLayoutManagerWidget
+    DuplicateItemExistsError
+'''
 from qt_view import qt_view
 from qt_view import SpacerContainer
 import logging
@@ -18,6 +31,10 @@ from diarc.util import TypedDict, typecheck
 log = logging.getLogger('fabrik.fabrik_view')
 
 class HookItem(QGraphicsWidget, qt_view.BandItemAttributes):
+    '''
+    A HookItem has a 1:1 mapping to a hook (and its transfer).
+    It is the Graphical representation of a transfer
+    '''
     def __init__(self, parent, hook_label):
         super(HookItem, self).__init__(parent)
         qt_view.BandItemAttributes.__init__(self)
@@ -25,12 +42,11 @@ class HookItem(QGraphicsWidget, qt_view.BandItemAttributes):
         self._layout_manager = typecheck(parent, FabrikLayoutManagerWidget, "parent")
         self._view = parent.view()
         self._adapter = parent.adapter()
-        self.originAltitude, self.destAltitude, self.latchIndex = \
-                                             hooklabel.parse_hooklabel(self._hook_label)
+        originAltitude, destAltitude, self.latchIndex = hooklabel.parse_hooklabel(self._hook_label)
 
         #Deal with the parsed things.
-        self.origin_band_item = self._layout_manager.get_band_item(self.originAltitude)
-        self.dest_band_item = self._layout_manager.get_band_item(self.destAltitude)
+        self.origin_band_item = self._layout_manager.get_band_item(originAltitude)
+        self.dest_band_item = self._layout_manager.get_band_item(destAltitude)
         self._container = self.latch
 
         self.rank = self.origin_band_item.rank
@@ -135,7 +151,7 @@ class HookItem(QGraphicsWidget, qt_view.BandItemAttributes):
             # Draw pointing down
             arrow = QPolygon([QPoint(0, 0), QPoint(arrow_width, 0),
                               QPoint(arrow_width/2.0, arrow_height)])
-            arrow.translate(self.rect().x()+arrow_margin, 
+            arrow.translate(self.rect().x()+arrow_margin,
                             self.rect().y()+rect.height()-arrow_height)
         painter.drawPolygon(arrow)
 
@@ -154,6 +170,10 @@ class HookItem(QGraphicsWidget, qt_view.BandItemAttributes):
         QToolTip.hideText()
 
 class FlowItem(QGraphicsWidget, qt_view.BandItemAttributes):
+    '''
+    A FlowItem has a 1:1 mapping to a flow (and its feed).
+    It is the Graphical representation of a feed.
+    '''
     def __init__(self, parent, flow_label):
         super(FlowItem, self).__init__(parent)
         qt_view.BandItemAttributes.__init__(self)
@@ -280,12 +300,12 @@ class FabrikView(QGraphicsView, View):
     __remove_snap_item_signal = Signal(str)
     __set_snap_item_settings_signal = Signal(str, object, object, object, object)
     __set_snap_item_attributes_signal = Signal(str, qt_view.SnapItemAttributes)
-    
+
     __add_hook_item_signal = Signal(str)
     __remove_hook_item_signal = Signal(str)
     __set_hook_item_settings_signal = Signal(str)
     __set_hook_item_attributes_signal = Signal(str, qt_view.BandItemAttributes)
-    
+
     __add_flow_item_signal = Signal(str)
     __remove_flow_item_signal = Signal(str)
     __set_flow_item_settings_signal = Signal(str)
@@ -364,12 +384,14 @@ class FabrikView(QGraphicsView, View):
         return self.layout_manager.has_band_item(altitude)
 
     def remove_band_item(self, altitude):
-        """ Remove the drawable object to correspond to a band """ 
+        """ Remove the drawable object to correspond to a band """
         self.__remove_band_item_signal.emit(altitude)
 
     def set_band_item_settings(self, altitude, rank, top_band_alt, bot_band_alt,
-                                leftmost_object_label, rightmost_object_label):
-        self.__set_band_item_settings_signal.emit(altitude, rank, top_band_alt, bot_band_alt, leftmost_object_label, rightmost_object_label)
+                               leftmost_object_label, rightmost_object_label):
+        self.__set_band_item_settings_signal.emit(altitude, rank, top_band_alt,
+                                                  bot_band_alt, leftmost_object_label,
+                                                  rightmost_object_label)
 
     def set_band_item_attributes(self, altitude, attributes):
         self.__set_band_item_attributes_signal.emit(altitude, attributes)
@@ -380,46 +402,47 @@ class FabrikView(QGraphicsView, View):
     def has_snap_item(self, snapkey):
         return self.layout_manager.has_snap_item(snapkey)
 
-    def remove_snap_item(self, snapkey): 
+    def remove_snap_item(self, snapkey):
         self.__remove_snap_item_signal.emit(snapkey)
 
     def set_snap_item_settings(self, snapkey, left_order, right_order, pos_band_alt, neg_band_alt):
-        self.__set_snap_item_settings_signal.emit(snapkey, left_order, right_order, pos_band_alt, neg_band_alt)
+        self.__set_snap_item_settings_signal.emit(snapkey, left_order, right_order, pos_band_alt,
+                                                  neg_band_alt)
 
     def set_snap_item_attributes(self, snapkey, attributes):
         self.__set_snap_item_attributes_signal.emit(snapkey, attributes)
-    
+
     def add_hook_item(self, hook_label):
         self.__add_hook_item_signal.emit(hook_label)
 
     def has_hook_item(self, hook_label):
         return self.layout_manager.has_hook_item(hook_label)
 
-    def remove_hook_item(self, hook_label): 
+    def remove_hook_item(self, hook_label):
         self.__remove_hook_item_signal.emit(hook_label)
 
     def set_hook_item_settings(self, hook_label):
-        self.__set_hook_item_settings_signal.emit(hook_label) 
+        self.__set_hook_item_settings_signal.emit(hook_label)
 
     def set_hook_item_attributes(self, hook_label, attributes):
         self.__set_hook_item_attributes_signal.emit(hook_label, attributes)
-    
+
     def add_flow_item(self, flow_label):
         self.__add_flow_item_signal.emit(flow_label)
 
     def has_flow_item(self, flow_label):
         return self.layout_manager.has_flow_item(flow_label)
 
-    def remove_flow_item(self, flow_label): 
+    def remove_flow_item(self, flow_label):
         self.__remove_flow_item_signal.emit(flow_label)
 
     def set_flow_item_settings(self, flow_label):
-        self.__set_flow_item_settings_signal.emit(flow_label) 
+        self.__set_flow_item_settings_signal.emit(flow_label)
 
     def set_flow_item_attributes(self, flow_label, attributes):
         self.__set_flow_item_attributes_signal.emit(flow_label, attributes)
-    
-    def wheelEvent(self,event):
+
+    def wheelEvent(self, event):
         """ Implements scrollwheel zooming """
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         scaleFactor = 1.15
@@ -436,21 +459,21 @@ class FabrikBlockItem(qt_view.BlockItem):
     def __str__(self):
         return "<FabrikBlockItem " + str(self.label) + ">"
 
-    def paint(self,painter,option,widget):
+    def paint(self, painter, option, widget):
         """Overwrites BlockItem.paint so that we can fill in the block rectangles"""
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         brush.setColor(self.bgcolor)
-        painter.fillRect(self.rect(),brush)
+        painter.fillRect(self.rect(), brush)
         border_pen = QPen()
         border_pen.setBrush(self.border_color)
         border_pen.setStyle(Qt.SolidLine)
         border_pen.setWidth(self.border_width)
         painter.setPen(border_pen)
         painter.drawRect(self.rect())
-    
+
     def hoverEnterEvent(self, event):
-        QToolTip.showText(event.screenPos(),self.label)
+        QToolTip.showText(event.screenPos(), self.label)
 
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
@@ -465,9 +488,9 @@ class FabrikSnapItem(qt_view.SnapItem):
 
     def __str__(self):
         return "<FabrikSnapItem "+ self.snapkey+ ">"
-    
+
     def hoverEnterEvent(self, event):
-        QToolTip.showText(event.screenPos(),self.label)
+        QToolTip.showText(event.screenPos(), self.label)
 
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
@@ -487,21 +510,21 @@ class FabrikBandItem(qt_view.BandItem):
     def link(self):
         sys.stdout.flush()
         # Assign the vertical anchors
-        super(qt_view.BandItem,self).link()
+        super(qt_view.BandItem, self).link()
         # Assign the horizontal Anchors
         l = self.parent.layout()
         l.addAnchor(self, Qt.AnchorLeft, self.left_most_obj, Qt.AnchorLeft)
         l.addAnchor(self, Qt.AnchorRight, self.right_most_obj, Qt.AnchorRight)
 
     def set_width(self, width):
-        """ Sets the 'width' of the band. 
+        """ Sets the 'width' of the band.
         This is actually setting the height, but is referred to as the width.
         """
         self.setPreferredHeight(width)
         self.setMinimumHeight(width)
 
     def hoverEnterEvent(self, event):
-        QToolTip.showText(event.screenPos(),self.label)
+        QToolTip.showText(event.screenPos(), self.label)
 
     def hoverLeaveEvent(self, event):
         QToolTip.hideText()
@@ -511,7 +534,6 @@ class PrintButtonWidget(QGraphicsWidget):
         super(PrintButtonWidget, self).__init__(parent=None)
         self._layoutmanager = layoutmanager
         self.setZValue(10)
-        #         self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding))
         self.h = 100
         self.w = 100
         self.setPreferredHeight(self.h)
@@ -519,23 +541,23 @@ class PrintButtonWidget(QGraphicsWidget):
         self.setPreferredWidth(self.w)
         self.setMinimumWidth(self.w)
         self.filename = filename
-        
+
     def mousePressEvent(self, event):
-        thing = QPixmap.grabWidget(self._layoutmanager._view)        
-        if thing.save(self.filename,'png',100):
+        thing = QPixmap.grabWidget(self._layoutmanager._view)
+        if thing.save(self.filename, 'png', 100):
             print "Saved image to ", self.filename
-                
+
     def paint(self, painter, option, widget):
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         brush.setColor(QColor("red"))
-        painter.fillRect(self.rect(),brush)
+        painter.fillRect(self.rect(), brush)
 
 class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
     def __init__(self, view, filename):
         super(FabrikLayoutManagerWidget, self).__init__(view)
-        self._hook_items = TypedDict(str,HookItem)
-        self._flow_items = TypedDict(str,FlowItem)  
+        self._hook_items = TypedDict(str, HookItem)
+        self._flow_items = TypedDict(str, FlowItem)
         log.debug("Initialized Fabrik Layout Manager")
         self.print_button = PrintButtonWidget(self, filename)
 
@@ -543,7 +565,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         log.debug("... Adding FabrikBlockItem %d"%index)
         """create a new FabrikBlockItem"""
         if index in self._block_items:
-            raise qt_view.DuplicateItemExistsError("Block Item with index %d already exists"%(index))
+            raise qt_view.DuplicateItemExistsError("Block Item with index %d already exists"%index)
         item = FabrikBlockItem(self, index)
         self._block_items[index] = item
         return item
@@ -565,7 +587,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         if snapkey in self._snap_items:
             raise DuplicateItemExistsError("SnapItem with snapkey %s already exists"%(snapkey))
         item = FabrikSnapItem(self, snapkey)
-        self._snap_items[snapkey] = item 
+        self._snap_items[snapkey] = item
         return item
 
     def set_band_item_settings(self, altitude, rank,
@@ -596,20 +618,23 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
                 item.right_most_obj = self._hook_items[str(rightmost_object_label)]
                 right_index = hooklabel.parse_hooklabel(rightmost_object_label)[2]
 
-        if right_index == left_index:
-            #Make sure it won't stick weirdly out to the left
-            if left_index > 0:
-                item.left_most_obj =  self._block_items[left_index - 1]
-            #Make sure it doesn't stick out weirdly to the right
-            if right_index < max(self._block_items.keys()):
-                item.right_most_obj = self._block_items[right_index + 1]
+        try:
+            if right_index == left_index:
+                #Make sure it won't stick weirdly out to the left
+                if left_index > 0:
+                    item.left_most_obj = self._block_items[left_index - 1]
+                #Make sure it doesn't stick out weirdly to the right
+                if right_index < max(self._block_items.keys()):
+                    item.right_most_obj = self._block_items[right_index + 1]
+        except: #right_index and left_index don't exist
+            pass
 
     def add_hook_item(self, hook_label):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
         log.debug("... Adding FabrikHookItem %s"%hook_label)
         if hook_label in self._hook_items:
-            raise DuplicateItemExistsError("HookItem with hook_label %s already exists"%(hook_label))
+            raise DuplicateItemExistsError("HookItem with hook_label %s already exists"%hook_label)
         item = HookItem(self, hook_label)
         self._hook_items[hook_label] = item
         return item
@@ -618,8 +643,8 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
         log.debug("... Removing HookItem %s"%hook_label)
-        self._hook_items[hook_label].release() 
-        self._hook_items.pop(hook_label) 
+        self._hook_items[hook_label].release()
+        self._hook_items.pop(hook_label)
 
     def set_hook_item_settings(self, hook_label):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
@@ -638,13 +663,13 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #hook_label gets passed in as a QString, since it goes across a signal/slot interface
         hook_label = str(hook_label)
         return self._hook_items[hook_label]
-    
+
     def add_flow_item(self, flow_label):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
         flow_label = str(flow_label)
         log.debug("... Adding FabrikFlowItem %s"%flow_label)
         if flow_label in self._flow_items:
-            raise DuplicateItemExistsError("FlowItem with flow_label %s already exists"%(flow_label))
+            raise DuplicateItemExistsError("FlowItem with flow_label %s already exists"%flow_label)
         item = FlowItem(self, flow_label)
         self._flow_items[flow_label] = item
         return item
@@ -653,8 +678,8 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
         flow_label = str(flow_label)
         log.debug("... Removing FlowItem %s"%flow_label)
-        self._flow_items[flow_label].release() 
-        self._flow_items.pop(flow_label) 
+        self._flow_items[flow_label].release()
+        self._flow_items.pop(flow_label)
 
     def set_flow_item_settings(self, flow_label):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
@@ -673,7 +698,7 @@ class FabrikLayoutManagerWidget(qt_view.LayoutManagerWidget):
         #flow_label gets passed in as a QString, since it goes across a signal/slot interface
         flow_label = str(flow_label)
         return self._flow_items[flow_label]
-    
+
 
     def link(self):
         log.debug("*** Begining Linking ***")

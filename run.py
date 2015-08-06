@@ -79,6 +79,30 @@ def fabrikview(args=None):
         view.raise_()
         sys.exit(app.exec_())
 
+def rabbitview(args=None):
+    try:
+        import python_qt_binding.QtGui
+    except:
+        print "Error: python_qt_binding not installed."
+        print "Please install using `sudo pip install python_qt_binding`"
+        exit(-1)
+    from fabrik import fabrik_view, fabrik_adapter, fabrik_parser
+    if args.url and args.user and args.pw and args.filename:
+        topology = fabrik_parser.build_topology_from_api(args.url, args.user, args.pw)
+        app = python_qt_binding.QtGui.QApplication([])
+        view = fabrik_view.FabrikView(args.filename)
+        adapter = fabrik_adapter.FabrikAdapter(topology, view)
+        adapter.flow_arrangement_enforcer()
+        adapter._update_view()
+        view.activateWindow()
+        view.raise_()
+        sys.exit(app.exec_())
+    else:
+        print "rabbitview requires a url, username, password, and filename for saving the image.\n"
+        print "Run run.py -h for more information on syntax"
+
+
+
 if __name__ == "__main__":
     available_views = dict(inspect.getmembers(sys.modules[__name__], inspect.isfunction))
 
@@ -95,6 +119,16 @@ if __name__ == "__main__":
 
     fileHelp = "name of the file where the png of the diagram will be saved"
     arg_parser.add_argument('--filename', help=fileHelp)
+
+    urlHelp = "url for base api directory in RabbitMQ (ie 'http://localhost:8083/api/')"
+    arg_parser.add_argument('--url', help=urlHelp)
+
+    userHelp = "username for RabbitMQ api"
+    arg_parser.add_argument('--user', help=userHelp)
+
+    pwHelp = "password for RabbitMQ api"
+    arg_parser.add_argument('--pw', help=pwHelp)
+
     '''
     ec2Help = "ec2 id"
     parser.add_argument('--ec2_id', help=ec2Help)
